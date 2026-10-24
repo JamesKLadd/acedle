@@ -358,7 +358,7 @@ function main() {
     const wanted = { w: needed.has(wk), l: needed.has(lk) };
     if (!wanted.w && !wanted.l) continue;
 
-    const category = m.category === "team" ? null : m.category;
+    const category = m.category === "team" || m.category === "excluded" ? null : m.category;
     if (category === "slam") {
       const reached = asSlamRound(m.round);
       if (reached) {
