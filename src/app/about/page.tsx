@@ -33,6 +33,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 export default function AboutPage() {
   const resultsThrough = "resultsThrough" in meta ? (meta.resultsThrough as number) : null;
+  const estimated = "rankingsEstimated" in meta && meta.rankingsEstimated === true;
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-10">
       <h1 className="text-3xl font-bold">About Acedle</h1>
@@ -76,6 +77,7 @@ export default function AboutPage() {
         </ul>
         <p>
           The {meta.lastYear} season is live: rankings as of <strong>{fmtYmd(meta.dataAsOf)}</strong>
+          {estimated && " (estimated from the ranks players entered tournaments with, until the next published list)"}
           {resultsThrough && (
             <>
               , results through <strong>{fmtYmd(resultsThrough)}</strong>

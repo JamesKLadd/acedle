@@ -12,6 +12,8 @@ export interface SeasonsMeta {
   dataAsOf: number;
   /** Day of the latest live-season result, YYYYMMDD (when live data was used). */
   resultsThrough?: number;
+  /** True when the latest ranking list is estimated from tournament entry ranks. */
+  rankingsEstimated?: boolean;
 }
 
 const SEASONS_DIR = join(process.cwd(), "data/seasons");

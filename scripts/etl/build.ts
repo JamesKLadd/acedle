@@ -219,10 +219,13 @@ interface LiveSeason {
   lists: Map<number, RankEntry[]>;
   /** Day of the latest match in the live files, YYYYMMDD. */
   resultsThrough: number;
+  /** The latest list is estimated, not published. */
+  rankingsEstimated: boolean;
 }
 
 function readPublishedLists(): Map<number, PublishedEntry[]> {
   const lists = new Map<number, PublishedEntry[]>();
+  if (!existsSync(LIVE_RANKINGS_FILE)) return lists;
   for (const r of readCsv(LIVE_RANKINGS_FILE)) {
     const date = Number(r.ranking_date);
     const list = lists.get(date) ?? [];
@@ -238,7 +241,7 @@ function readPublishedLists(): Map<number, PublishedEntry[]> {
  */
 function loadLiveSeason(players: Map<number, PlayerInfo>, rankings: Rankings, sackmann: readonly RawMatch[]): LiveSeason | null {
   const file = (name: string) => join(LIVE_RAW_DIR, name);
-  if (!existsSync(file(`${LAST_YEAR}.csv`)) || !existsSync(LIVE_RANKINGS_FILE)) {
+  if (!existsSync(file(`${LAST_YEAR}.csv`))) {
     console.warn("  No live-season files (run npm run data:fetch): building from the Sackmann snapshot only.");
     return null;
   }
@@ -286,12 +289,18 @@ function loadLiveSeason(players: Map<number, PlayerInfo>, rankings: Rankings, sa
     published.set(monday, list);
     observations.push(...list.map((e) => ({ ...e, listDate: monday })));
   }
-  if (published.size === 0) throw new Error(`No published ranking list after ${lastOfficial} in ${LIVE_RANKINGS_FILE}`);
-
-  const latest = Math.max(...published.keys());
+  // Weekly lists up to the newest tournament week: published where we have
+  // them, otherwise estimated from the ranks players had at each event. That
+  // keeps rankings moving when the published list can't be fetched.
+  const lastPublished = published.size ? Math.max(...published.keys()) : null;
+  const latest = Math.max(lastPublished ?? 0, ...observations.map((o) => o.listDate));
   const lists = new Map<number, RankEntry[]>();
   for (let d = addDaysYmd(lastOfficial, 7); d <= latest; d = addDaysYmd(d, 7)) {
     lists.set(d, published.get(d) ?? reconstructList(observations, d));
+  }
+  const rankingsEstimated = latest !== lastPublished;
+  if (rankingsEstimated) {
+    console.warn(`  Rankings after ${lastPublished ?? lastOfficial} are estimated (no published list since).`);
   }
   const resultsThrough = Math.max(...tourRows.map((r) => Number(r.tourney_date) || 0));
   console.log(
@@ -299,7 +308,7 @@ function loadLiveSeason(players: Map<number, PlayerInfo>, rankings: Rankings, sa
       `${published.size} published + ${lists.size - published.size} reconstructed ranking lists up to ${latest}, ` +
       `${added.size} players not in Sackmann's list`,
   );
-  return { players: added, matches, lists, resultsThrough };
+  return { players: added, matches, lists, resultsThrough, rankingsEstimated };
 }
 
 // ------------------------------------------------------------------ build
@@ -645,7 +654,7 @@ function main() {
         lastYear: LAST_YEAR,
         liveYear,
         dataAsOf: lastRankingDate,
-        ...(live && { resultsThrough: live.resultsThrough }),
+        ...(live && { resultsThrough: live.resultsThrough, rankingsEstimated: live.rankingsEstimated }),
       },
       null,
       2,
