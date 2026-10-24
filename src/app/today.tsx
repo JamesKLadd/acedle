@@ -1,13 +1,15 @@
-import { connection } from "next/server";
+import Link from "next/link";
 
 import { RollCard } from "@/components/roll-card";
 import type { OAuthProvider } from "@/lib/auth/providers";
 import { getAuthSettings, type AuthSettings } from "@/lib/auth/settings";
 import type { SignInNotice } from "@/lib/auth/sign-in";
+import { getViewer } from "@/lib/auth/viewer";
+import { fmtDay } from "@/lib/format";
+import { getRollBoard } from "@/lib/leaderboard";
 import { toDailyRoll, utcDay } from "@/lib/roll/daily";
 import { supabaseRollStore } from "@/lib/roll/store";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { createClient } from "@/lib/supabase/server";
 
 import { signOut } from "./actions";
 import { RollButton } from "./roll-button";
@@ -22,14 +24,6 @@ const NOTICES: Record<SignInNotice, string> = {
 /** If the settings can't be read, offer guest play and let any error surface when rolling. */
 const FALLBACK_SETTINGS: AuthSettings = { guests: true, providers: [] };
 
-const fmtDay = (day: string) =>
-  new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    timeZone: "UTC",
-  });
-
 /** Today's roll (or the button to make it) and the account status. Reads the session. */
 export async function Today({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   if (!isSupabaseConfigured()) {
@@ -40,26 +34,27 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
     );
   }
 
-  // Both the session check (token expiry) and "today" read the clock, so this
-  // renders at request time only, never in a prefetch.
-  await connection();
-
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-  const claims = data?.claims ?? null;
-  const isAccount = Boolean(claims && !claims.is_anonymous);
+  const { supabase, userId, isAccount } = await getViewer();
   const day = utcDay();
 
-  const [settings, row, profile, params] = await Promise.all([
+  const [settings, row, profile, board, params] = await Promise.all([
     getAuthSettings().catch((e) => {
       console.error(e);
       return FALLBACK_SETTINGS;
     }),
-    claims ? supabaseRollStore(supabase).find(claims.sub, day) : null,
-    claims && isAccount ? supabase.from("profiles").select("handle").eq("user_id", claims.sub).maybeSingle() : null,
+    userId ? supabaseRollStore(supabase).find(userId, day) : null,
+    userId && isAccount ? supabase.from("profiles").select("handle").eq("user_id", userId).maybeSingle() : null,
+    // The rank line is a bonus: don't fail the page over it.
+    isAccount
+      ? getRollBoard(supabase, day, day).catch((e) => {
+          console.error(e);
+          return null;
+        })
+      : null,
     searchParams,
   ]);
   const roll = row && toDailyRoll(row);
+  const mine = board?.find((e) => e.is_viewer);
   const notice =
     typeof params.notice === "string" && Object.hasOwn(NOTICES, params.notice) ? (params.notice as SignInNotice) : null;
 
@@ -77,9 +72,20 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
             Today&apos;s roll · {fmtDay(day)}
           </h2>
           <RollCard season={roll.season} score={roll.score} />
-          <p className="mt-3 text-sm text-zinc-500">Your next roll unlocks at midnight UTC.</p>
+          <p className="mt-3 text-sm text-zinc-500">
+            {mine && (
+              <>
+                You&apos;re <strong className="text-foreground">#{mine.rank}</strong> of {mine.entries} today ·{" "}
+                <Link href="/leaderboard" className="underline underline-offset-4 hover:text-foreground">
+                  Leaderboards
+                </Link>{" "}
+                ·{" "}
+              </>
+            )}
+            Your next roll unlocks at midnight UTC.
+          </p>
         </div>
-      ) : claims || settings.guests ? (
+      ) : userId || settings.guests ? (
         <RollButton />
       ) : settings.providers.length > 0 ? (
         <p>Sign in to roll today&apos;s season.</p>
@@ -99,7 +105,7 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
           </form>
         </div>
       ) : (
-        <SignInPrompt providers={settings.providers} guest={Boolean(claims)} />
+        <SignInPrompt providers={settings.providers} guest={Boolean(userId)} />
       )}
     </div>
   );

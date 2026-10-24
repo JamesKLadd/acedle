@@ -32,9 +32,9 @@ The daily roll, guests and sign-in need a Supabase project. `/dev/roll` works
 without one.
 
 1. Copy `.env.example` to `.env.local` and fill in the project URL and keys.
-2. Apply the schema in `supabase/migrations/`. Either paste the SQL into the
-   dashboard's SQL Editor and run it, or use the CLI (stick to one of the two,
-   since the CLI keeps its own record of applied migrations):
+2. Apply the schema in `supabase/migrations/`, oldest file first. Either paste
+   each file into the dashboard's SQL Editor and run it, or use the CLI (stick
+   to one of the two, since the CLI keeps its own record of applied migrations):
    ```bash
    npx supabase db push --db-url "$SUPABASE_DB_URL"
    ```

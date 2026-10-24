@@ -27,11 +27,16 @@ export function utcDay(now: Date = new Date()): string {
   return now.toISOString().slice(0, 10);
 }
 
+/** The UTC day `n` days after `day` (or before, for negative `n`). */
+export function addDays(day: string, n: number): string {
+  const d = new Date(`${day}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return utcDay(d);
+}
+
 /** Monday of the day's week (weeks run Monday to Sunday, UTC). Matches rolls.week. */
 export function weekOf(day: string): string {
-  const d = new Date(`${day}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
-  return utcDay(d);
+  return addDays(day, -((new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7));
 }
 
 /** Uniform [0, 1) from the platform CSPRNG, so rolls can't be predicted. */

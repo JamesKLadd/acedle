@@ -4,8 +4,8 @@
 > season (1990–2026), then a random top-100 player from that season. That
 > player-season's real stats earn badges, and the badges add up to your score.
 
-Status: **v0.3**. Milestones 1 (data + scoring engine) and 2 (daily roll +
-accounts) are built. Badge values are tuned against the real data, and
+Status: **v0.4**. Milestones 1 (data + scoring engine), 2 (daily roll +
+accounts) and 3 (leaderboards + profile) are built. Badge values are tuned against the real data, and
 `docs/balance-report.md` shows the current numbers.
 
 ---
@@ -79,8 +79,29 @@ cookies would give a guest a fresh roll.
 | Weekly | Top 100 **rolls** (one user can appear up to 7 times) | Mon 00:00 – Sun 23:59 UTC |
 | All-time | Top 100 **accounts** by total points | Forever |
 
-All three can also show the viewer's own position even when they're outside the
-top 100. Possible later: all-time "best single roll", and per-country boards.
+All three also show the viewer's own position, even outside the top 100 (their
+rows follow the top 100 after a gap). Tied scores share a rank (1, 1, 3), and the
+earlier roll (or older account) is listed first. Guests don't appear; a guest
+viewing a board is asked to sign in.
+
+Pages: `/leaderboard` (today), `/leaderboard/weekly`, `/leaderboard/all-time`.
+The home page also shows "#N of M today" under an account's roll.
+
+Possible later: past days and weeks, all-time "best single roll", and
+per-country boards.
+
+### Profile
+
+`/profile` is the viewer's own page (accounts and guests): handle, rolls, total
+points, best roll and all-time rank, with three tabs:
+- **History:** every roll, newest first. Each opens `/rolls/[id]` with the full
+  badge breakdown (own rolls only).
+- **Badges:** all 55 badges by category, with times earned and the first day.
+  Hidden badges show as "???" until earned.
+- **Player-dex:** players, player-seasons and years collected out of all that
+  can be rolled, a grid of the 37 years, and each player with the seasons rolled.
+
+Public profiles (clicking a name on a board) are a possible later addition.
 
 ---
 
@@ -188,15 +209,26 @@ src/lib/data/        PlayerSeason types, year range, season loader
 src/lib/scoring/     Pure scoring engine + badge definitions (+ tests)
 src/lib/roll/        Roll logic: uniform odds, sandbox luck, daily roll + its store (+ tests)
 src/lib/supabase/    Server, browser and service-role clients; Database types
-src/lib/auth/        Enabled sign-in methods, post-sign-in profile + guest claim (+ tests)
+src/lib/auth/        Enabled sign-in methods, the viewer for a request, post-sign-in
+                     profile + guest claim (+ tests)
+src/lib/leaderboard.ts  Leaderboard reads (Postgres functions)
+src/lib/profile/     Profile queries; summary, badge collection, player-dex (+ tests)
 src/proxy.ts         Refreshes the Supabase session before rendering
-src/app/             Next.js routes: / (daily roll), /auth/callback, /auth/error,
+src/app/             Next.js routes: / (daily roll), /leaderboard{,/weekly,/all-time},
+                     /profile{,/badges,/dex}, /rolls/[id], /auth/callback, /auth/error,
                      /dev/roll, /api/dev/roll; actions.ts (rollToday, signOut)
 ```
 
 **Who writes what:** clients only ever read (RLS: own rolls; players and
-profiles are public). The server writes rolls with the service-role key after
-verifying the session, so a score can only come from the scoring engine.
+profiles are public; leaderboards through functions that return public columns
+only). The server writes rolls with the service-role key after verifying the
+session, so a score can only come from the scoring engine.
+
+**Rendering:** pages are static shells, and everything that depends on the
+session streams in behind `<Suspense>`. Reading the session goes through
+`getViewer()`, which calls `connection()` first: checking the token and working
+out "today" both read the clock, which Cache Components doesn't allow while
+prerendering.
 
 ### Commands
 
@@ -228,11 +260,11 @@ Schema: `supabase/migrations/`. Types: `src/lib/supabase/database.types.ts`
 
 - `players(id, name, country, hand, height_cm)`, with details from each player's latest season. Birth dates aren't in the season data yet (only `age`).
 - `player_seasons(year, player_id, final_rank, stats jsonb, data_as_of)`, with primary key `(year, player_id)`. `stats` is the full `PlayerSeason`.
-- `profiles(user_id, handle, avatar_url, created_at)`. Only accounts have one, which is what keeps guests off leaderboards. The handle defaults to the provider username, or a first name and last initial ("Novak D.").
+- `profiles(user_id, handle, avatar_url, created_at, total_score, roll_count)`. Only accounts have one, which is what keeps guests off leaderboards. The handle defaults to the provider username, or a first name and last initial ("Novak D."). A trigger on `rolls` keeps `total_score` and `roll_count` up to date.
 - `rolls(id, user_id, day, week, year, player_id, season_snapshot jsonb, badges jsonb, base, mult, score, scoring_version, created_at)`, with `UNIQUE(user_id, day)`. `week` is generated (the Monday of `day`).
 - `user_badges`: a view over `rolls.badges` (times earned, first and last day) for the collection page.
 - `create_profile_and_claim(user, handle, avatar, guest)`: run by the OAuth callback. It creates the profile, and only if that's new does it move the guest's rolls. Service role only.
-- Leaderboards are indexed queries on `rolls(day, score desc)`, `rolls(week, score desc)`, and the per-user sum of score.
+- `roll_leaderboard(from, to)`: rolls between two UTC days (at most a week), so it serves both the daily and the weekly board. `alltime_leaderboard()`: accounts by `total_score`. Both return the top 100 plus the viewer's own rows, with public columns only: handle, avatar, player, score, rank, the board's size, and `is_viewer`.
 
 ---
 
@@ -251,10 +283,13 @@ Schema: `supabase/migrations/`. Types: `src/lib/supabase/database.types.ts`
 - Guest → account claim in `/auth/callback` (new accounts only; see §2)
 - Session refresh in `src/proxy.ts`; the home page shows today's roll or the Roll button
 
-**M3 — Leaderboards + profile** (next)
-- Daily, weekly and all-time boards; roll history; badge collection; player-dex
+**M3 — Leaderboards + profile ✅**
+- Daily, weekly and all-time boards, with the viewer's position (`/leaderboard`)
+- Profile: roll history with per-roll detail, badge collection, player-dex (`/profile`)
+- Running totals per account, and leaderboard functions (second migration)
+- Site nav; "#N of M today" on the home page
 
-**M4 — Fun layer**
+**M4 — Fun layer** (next)
 - Reveal animation, share text plus OG image, `/sandbox` with luck slider
 
 **M5 — Live 2026 + launch**

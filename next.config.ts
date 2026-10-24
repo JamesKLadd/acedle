@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     // The daily roll runs in the home page's Server Action.
     "/": ["./data/seasons/**"],
+    // The player-dex counts every rollable player.
+    "/profile/**": ["./data/seasons/**"],
     "/api/**": ["./data/seasons/**"],
   },
   turbopack: {

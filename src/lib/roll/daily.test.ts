@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { findSeason, loadSeasons } from "../data/seasons";
 import { SCORING_VERSION, scoreSeason } from "../scoring";
 import {
+  addDays,
   rollForToday,
   rollRow,
   secureRandom,
@@ -45,6 +46,15 @@ describe("utcDay", () => {
     expect(utcDay(new Date("2026-10-24T23:59:59.999Z"))).toBe("2026-10-24");
     expect(utcDay(new Date("2026-10-25T00:00:00.000Z"))).toBe("2026-10-25");
     expect(utcDay(new Date("2026-10-24T22:30:00-05:00"))).toBe("2026-10-25");
+  });
+});
+
+describe("addDays", () => {
+  it("moves across months, years and leap days", () => {
+    expect(addDays("2026-10-24", 6)).toBe("2026-10-30");
+    expect(addDays("2026-12-28", 6)).toBe("2027-01-03");
+    expect(addDays("2028-03-01", -1)).toBe("2028-02-29");
+    expect(addDays("2026-10-24", 0)).toBe("2026-10-24");
   });
 });
 

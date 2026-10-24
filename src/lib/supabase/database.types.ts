@@ -53,12 +53,17 @@ export type Database = {
           handle: string;
           avatar_url: string | null;
           created_at: string;
+          /** Sum of the account's roll scores (kept up to date by a trigger). */
+          total_score: number;
+          roll_count: number;
         };
         Insert: {
           user_id: string;
           handle: string;
           avatar_url?: string | null;
           created_at?: string;
+          total_score?: number;
+          roll_count?: number;
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
         Relationships: [];
@@ -124,6 +129,35 @@ export type Database = {
         Args: { p_user_id: string; p_handle: string; p_avatar_url: string | null; p_guest_id?: string | null };
         Returns: boolean;
       };
+      roll_leaderboard: {
+        /** UTC days, YYYY-MM-DD, at most 7 days apart. */
+        Args: { p_from: string; p_to: string };
+        Returns: {
+          rank: number;
+          entries: number;
+          day: string;
+          handle: string;
+          avatar_url: string | null;
+          year: number;
+          player_id: number;
+          player_name: string;
+          final_rank: number;
+          score: number;
+          is_viewer: boolean;
+        }[];
+      };
+      alltime_leaderboard: {
+        Args: never;
+        Returns: {
+          rank: number;
+          entries: number;
+          handle: string;
+          avatar_url: string | null;
+          total_score: number;
+          roll_count: number;
+          is_viewer: boolean;
+        }[];
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
@@ -132,3 +166,5 @@ export type Database = {
 
 export type Tables<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Row"];
 export type TablesInsert<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Insert"];
+export type FunctionReturns<F extends keyof Database["public"]["Functions"]> =
+  Database["public"]["Functions"][F]["Returns"];

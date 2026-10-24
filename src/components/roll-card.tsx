@@ -1,7 +1,8 @@
 import type { PlayerSeason } from "@/lib/data/types";
+import { fmtMult, fmtScore } from "@/lib/format";
 import type { BadgeCategory, EarnedBadge, ScoreResult } from "@/lib/scoring/types";
 
-const CATEGORY_STYLES: Record<BadgeCategory, string> = {
+export const CATEGORY_STYLES: Record<BadgeCategory, string> = {
   titles: "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200",
   surface: "bg-orange-100 text-orange-900 dark:bg-orange-900/40 dark:text-orange-200",
   ranking: "bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-200",
@@ -10,9 +11,6 @@ const CATEGORY_STYLES: Record<BadgeCategory, string> = {
   profile: "bg-zinc-200 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200",
   jackpot: "bg-fuchsia-100 text-fuchsia-900 dark:bg-fuchsia-900/40 dark:text-fuchsia-200",
 };
-
-const fmt = (n: number) => Math.round(n).toLocaleString("en-US");
-const fmtMult = (m: number) => `×${Number.isInteger(m) ? m : m.toFixed(2)}`;
 
 function BadgeRow({ badge }: { badge: EarnedBadge }) {
   return (
@@ -25,7 +23,7 @@ function BadgeRow({ badge }: { badge: EarnedBadge }) {
         <span className="block truncate text-sm text-zinc-500 dark:text-zinc-400">{badge.detail}</span>
       </span>
       <span className="shrink-0 font-mono tabular-nums">
-        {badge.multiplier !== null ? fmtMult(badge.multiplier) : `+${fmt(badge.points)}`}
+        {badge.multiplier !== null ? fmtMult(badge.multiplier) : `+${fmtScore(badge.points)}`}
       </span>
     </li>
   );
@@ -53,7 +51,7 @@ export function RollCard({ season: s, score }: { season: PlayerSeason; score: Sc
       <dl className="mt-4 grid grid-cols-3 gap-2 border-t border-zinc-200 pt-4 text-center dark:border-zinc-800">
         <div>
           <dt className="text-xs text-zinc-500 uppercase">Base</dt>
-          <dd className="font-mono tabular-nums">{fmt(score.base)}</dd>
+          <dd className="font-mono tabular-nums">{fmtScore(score.base)}</dd>
         </div>
         <div>
           <dt className="text-xs text-zinc-500 uppercase">Multiplier</dt>
@@ -61,7 +59,7 @@ export function RollCard({ season: s, score }: { season: PlayerSeason; score: Sc
         </div>
         <div>
           <dt className="text-xs text-zinc-500 uppercase">Score</dt>
-          <dd className="font-mono text-xl font-bold tabular-nums">{fmt(score.total)}</dd>
+          <dd className="font-mono text-xl font-bold tabular-nums">{fmtScore(score.total)}</dd>
         </div>
       </dl>
     </section>
