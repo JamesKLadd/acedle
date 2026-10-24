@@ -60,7 +60,17 @@ export async function fetchLive() {
     console.log(`  ${file}: ${text.split("\n").length - 2} rows`);
   }
 
-  const { date, entries } = parseTennisAbstractRankings(await download(RANKINGS_URL));
+  // Tennis Abstract can refuse some networks (it answers 403 to GitHub's
+  // runners). Results still refresh; the build keeps the lists saved so far.
+  let html: string;
+  try {
+    html = await download(RANKINGS_URL);
+  } catch (e) {
+    const message = `Couldn't fetch the ranking list (${e instanceof Error ? e.message : e}); keeping the saved lists.`;
+    console.warn(process.env.GITHUB_ACTIONS ? `::warning::${message}` : `  Warning: ${message}`);
+    return;
+  }
+  const { date, entries } = parseTennisAbstractRankings(html);
   const top = entries.slice(0, 100).map((e) => e.rank);
   if (top.length < 100 || top.some((r, i) => r !== i + 1)) {
     throw new Error(`Ranking list ${date} looks wrong: expected ranks 1–100 in order`);
