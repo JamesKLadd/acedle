@@ -4,9 +4,9 @@
 > season (1990–2026), then a random top-100 player from that season. That
 > player-season's real stats earn badges, and the badges add up to your score.
 
-Status: **v0.2**. Milestone 1 (data + scoring engine) is built. Badge values
-are tuned against the real data, and `docs/balance-report.md` shows the
-current numbers.
+Status: **v0.3**. Milestones 1 (data + scoring engine) and 2 (daily roll +
+accounts) are built. Badge values are tuned against the real data, and
+`docs/balance-report.md` shows the current numbers.
 
 ---
 
@@ -51,11 +51,23 @@ current numbers.
 **Score freezing:** a roll's score never changes after it's made, even if we
 retune badges later. Every roll records the `SCORING_VERSION` that produced it.
 
-**Guests:** use Supabase **anonymous sign-in**. A guest has a real (anonymous)
-user row, so one roll per day is enforced the same way for guests and accounts.
-Linking an OAuth identity upgrades the same user in place, so today's roll and
-history carry over. Only linked (non-anonymous) accounts appear on leaderboards,
-because clearing cookies would give a guest a fresh roll.
+**Guests:** use Supabase **anonymous sign-in**. The browser signs in as a guest
+the first time a visitor presses Roll (in the browser, so Supabase's per-IP
+rate limit applies to each visitor rather than to our server). A guest has a
+real (anonymous) user row, so one roll per day is enforced the same way for
+guests and accounts.
+
+**Claiming:** signing in with OAuth lands on `/auth/callback`, which knows the
+guest the browser was signed in as.
+- If the sign-in creates a **new** account, the guest's rolls (today's and any
+  earlier ones) move into it.
+- If the account **already existed**, it keeps its own rolls and the guest's
+  are discarded. Otherwise someone could roll as several guests and claim the
+  best one.
+- Either way the guest user is deleted, since the browser has left it.
+
+Only accounts (users with a profile) appear on leaderboards, because clearing
+cookies would give a guest a fresh roll.
 
 ---
 
@@ -170,11 +182,21 @@ data/raw/            Sackmann CSVs (gitignored; npm run data:fetch)
 data/seasons/        Generated player-seasons, one JSON per year (committed)
 scripts/etl/         fetch.ts (sparse clone), build.ts (stats), parse.ts (+ tests)
 scripts/balance.ts   Writes docs/balance-report.md
+scripts/db/          seed.ts: loads players + player_seasons into Supabase (+ tests)
+supabase/migrations/ Postgres schema, RLS and grants
 src/lib/data/        PlayerSeason types, year range, season loader
 src/lib/scoring/     Pure scoring engine + badge definitions (+ tests)
-src/lib/roll/        Roll logic: uniform odds, sandbox luck (+ tests)
-src/app/             Next.js routes: /, /dev/roll, /api/dev/roll
+src/lib/roll/        Roll logic: uniform odds, sandbox luck, daily roll + its store (+ tests)
+src/lib/supabase/    Server, browser and service-role clients; Database types
+src/lib/auth/        Enabled sign-in methods, post-sign-in profile + guest claim (+ tests)
+src/proxy.ts         Refreshes the Supabase session before rendering
+src/app/             Next.js routes: / (daily roll), /auth/callback, /auth/error,
+                     /dev/roll, /api/dev/roll; actions.ts (rollToday, signOut)
 ```
+
+**Who writes what:** clients only ever read (RLS: own rolls; players and
+profiles are public). The server writes rolls with the service-role key after
+verifying the session, so a score can only come from the scoring engine.
 
 ### Commands
 
@@ -183,8 +205,9 @@ src/app/             Next.js routes: /, /dev/roll, /api/dev/roll
 | `npm run data:fetch` | Sparse-clone the source CSVs (~140 MB) |
 | `npm run data:build` | Rebuild `data/seasons/*.json` (~10 s) |
 | `npm run balance` | Regenerate the balance report |
+| `npm run db:seed` | Load players + player-seasons into Supabase (after a schema change or `data:build`) |
 | `npm test` / `npm run lint` / `npm run typecheck` | Checks |
-| `npm run dev` | Local app; open `/dev/roll` |
+| `npm run dev` | Local app; open `/` for the daily roll or `/dev/roll` |
 
 ### Data notes
 
@@ -198,14 +221,18 @@ src/app/             Next.js routes: /, /dev/roll, /api/dev/roll
 - **Ranking points:** when a year's final ranking list lacks points, the latest list with points is used.
 - **Weeks at #1** count days between published lists, so gaps in the data and the 2020 freeze are handled.
 
-### Data model (Postgres, M2)
+### Data model (Postgres)
 
-- `players(id, name, country, hand, height_cm, birth_date)`
-- `player_seasons(year, player_id, final_rank, stats jsonb, data_as_of)`, with primary key `(year, player_id)`
-- `profiles(user_id, handle, avatar_url, created_at)`
-- `rolls(id, user_id, day date, year, player_id, season_snapshot jsonb, badges jsonb, base, mult, score, scoring_version, created_at)`, with `UNIQUE(user_id, day)`
-- `user_badges` (a view over `rolls.badges`) for the collection page
-- Leaderboards are indexed queries on `rolls(day, score desc)`, `rolls(week, score desc)`, and the per-user sum of score
+Schema: `supabase/migrations/`. Types: `src/lib/supabase/database.types.ts`
+(hand-written; keep them in sync).
+
+- `players(id, name, country, hand, height_cm)`, with details from each player's latest season. Birth dates aren't in the season data yet (only `age`).
+- `player_seasons(year, player_id, final_rank, stats jsonb, data_as_of)`, with primary key `(year, player_id)`. `stats` is the full `PlayerSeason`.
+- `profiles(user_id, handle, avatar_url, created_at)`. Only accounts have one, which is what keeps guests off leaderboards. The handle defaults to the provider username, or a first name and last initial ("Novak D.").
+- `rolls(id, user_id, day, week, year, player_id, season_snapshot jsonb, badges jsonb, base, mult, score, scoring_version, created_at)`, with `UNIQUE(user_id, day)`. `week` is generated (the Monday of `day`).
+- `user_badges`: a view over `rolls.badges` (times earned, first and last day) for the collection page.
+- `create_profile_and_claim(user, handle, avatar, guest)`: run by the OAuth callback. It creates the profile, and only if that's new does it move the guest's rolls. Service role only.
+- Leaderboards are indexed queries on `rolls(day, score desc)`, `rolls(week, score desc)`, and the per-user sum of score.
 
 ---
 
@@ -217,13 +244,14 @@ src/app/             Next.js routes: /, /dev/roll, /api/dev/roll
 - Scoring engine, 55 badges, balance report, curve tuned to a ~100M top
 - `/dev/roll` page plus `GET /api/dev/roll` (also `?year=&player=` to score a specific season)
 
-**M2 — Daily roll + accounts** (next)
-- Supabase project and schema
-- Anonymous auth plus OAuth linking
-- Server-side daily roll with one-per-day enforcement
-- Guest → account claim
+**M2 — Daily roll + accounts ✅**
+- Supabase schema with RLS (`supabase/migrations/`), plus `npm run db:seed` for player data
+- Guest play through anonymous sign-in, and OAuth sign-in (Google / Discord / GitHub; only the providers switched on in Supabase are shown)
+- Server-side daily roll with a CSPRNG, one per user per UTC day (enforced by `UNIQUE(user_id, day)`; concurrent rolls get the stored one)
+- Guest → account claim in `/auth/callback` (new accounts only; see §2)
+- Session refresh in `src/proxy.ts`; the home page shows today's roll or the Roll button
 
-**M3 — Leaderboards + profile**
+**M3 — Leaderboards + profile** (next)
 - Daily, weekly and all-time boards; roll history; badge collection; player-dex
 
 **M4 — Fun layer**
@@ -237,6 +265,6 @@ src/app/             Next.js routes: /, /dev/roll, /api/dev/roll
 ## 8. Open items
 
 1. **Live 2026 data:** the mirror stops at 8 June 2026 (rankings) and late May 2026 (matches). Keeping 2026 "live" needs a new source that permits non-commercial use. Otherwise 2026 stays frozen at the June snapshot.
-2. **Handles/moderation:** are display names chosen freely or taken from OAuth? A profanity filter?
-3. **Anti-abuse:** multiple OAuth accounts per person can farm the all-time board. Accept this for v1?
-4. **Supabase:** needs a project (URL + anon key + service key) before M2 can be tested end to end.
+2. **Handles/moderation:** M2 takes the handle from OAuth (username, or first name and last initial). Should M3 let people edit it? Do we need a profanity filter?
+3. **Anti-abuse:** multiple OAuth accounts per person can farm the all-time board. Accept this for v1? Supabase also recommends CAPTCHA on anonymous sign-ins; that needs a widget in the Roll flow.
+4. **Abandoned guests:** each guest that never signs in leaves an anonymous user and its rolls behind. Add a scheduled cleanup (e.g. delete anonymous users older than 30 days) before launch.
