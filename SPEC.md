@@ -4,9 +4,9 @@
 > season (1990–2026), then a random top-100 player from that season. That
 > player-season's real stats earn badges, and the badges add up to your score.
 
-Status: **v0.5**. Milestones 1 (data + scoring engine), 2 (daily roll +
-accounts), 3 (leaderboards + profile) and 4 (reveal, sharing, sandbox) are
-built. Badge values are tuned against the real data, and
+Status: **v0.6**. Milestones 1–5 are built: data and scoring, daily roll and
+accounts, leaderboards and profile, reveal and sharing, and the live 2026
+season. What's left for launch is the deploy (section 7). Badge values are tuned against the real data, and
 `docs/balance-report.md` shows the current numbers.
 
 ---
@@ -31,7 +31,7 @@ built. Badge values are tuned against the real data, and
 | Accounts | Guest play plus optional OAuth (Google / Discord / GitHub). A guest can claim today's roll by signing in |
 | Reset | UTC midnight. The week runs Monday–Sunday (UTC) |
 | Era fairness | Points badges use the share of that year's #1 points, not raw points |
-| Data | Jeff Sackmann's ATP data (CC BY-NC-SA 4.0), via an archive mirror. Non-commercial hobby project |
+| Data | Jeff Sackmann's ATP data (CC BY-NC-SA 4.0) via an archive mirror, plus the live 2026 season from Tennis My Life (results) and Tennis Abstract (rankings). Non-commercial hobby project |
 | Stack | Next.js 16 (App Router, TypeScript, Tailwind) + Supabase (Postgres, Auth) on Vercel |
 
 ---
@@ -158,11 +158,11 @@ score = round(base × mult)
 
 | | median | top 10% | top 1% | max |
 |---|---|---|---|---|
-| All rolls | ~49k | ~436k | ~7.4M | ~103M |
+| All rolls | ~49k | ~449k | ~7.4M | ~103M |
 
 | Final rank | median score |
 |---|---|
-| #1 | ~14.6M |
+| #1 | ~15.8M |
 | #2–5 | ~2.1M |
 | #6–10 | ~750k |
 | #11–20 | ~230k |
@@ -216,8 +216,9 @@ Top seasons:
 ### 4.4 2026 (live season)
 
 - The pool is the latest ranking list's top 100, and its stats are year-to-date.
-- Ranking badges read "currently" instead of "year-end".
+- Ranking badges read "currently" instead of "year-end". The roll card says which list it was ranked on ("live season, ranked as of Oct 19, 2026").
 - Each stored roll keeps its own stats snapshot, so its score is frozen at roll time.
+- The data refreshes daily (see "Live season" in section 6).
 
 ---
 
@@ -235,7 +236,10 @@ Top seasons:
 ```
 data/raw/            Sackmann CSVs (gitignored; npm run data:fetch)
 data/seasons/        Generated player-seasons, one JSON per year (committed)
-scripts/etl/         fetch.ts (sparse clone), build.ts (stats), parse.ts (+ tests)
+scripts/etl/         fetch.ts (sparse clone + live sources), fetch-live.ts, build.ts (stats),
+                     live.ts (live-season merge), parse.ts (+ tests)
+data/live/           Every published 2026 ranking list fetched so far (committed)
+.github/workflows/   refresh-data.yml: daily live-season refresh
 scripts/balance.ts   Writes docs/balance-report.md
 scripts/db/          seed.ts: loads players + player_seasons into Supabase (+ tests)
 supabase/migrations/ Postgres schema, RLS and grants
@@ -254,7 +258,7 @@ src/components/      Roll card, reveal, share button, boards, tabs, progress bar
 src/proxy.ts         Refreshes the Supabase session before rendering
 src/app/             Next.js routes: / (daily roll), /leaderboard{,/weekly,/all-time},
                      /profile{,/badges,/dex}, /rolls/[id] (+ opengraph-image), /sandbox,
-                     /api/sandbox/roll, /auth/callback, /auth/error; actions.ts
+                     /about, /api/sandbox/roll, /auth/callback, /auth/error; actions.ts
                      (rollToday, signOut)
 ```
 
@@ -273,7 +277,7 @@ prerendering.
 
 | Command | What it does |
 |---|---|
-| `npm run data:fetch` | Sparse-clone the source CSVs (~140 MB) |
+| `npm run data:fetch` | Sparse-clone the source CSVs (~140 MB) and download the live season |
 | `npm run data:build` | Rebuild `data/seasons/*.json` (~10 s) |
 | `npm run balance` | Regenerate the balance report |
 | `npm run db:seed` | Load players + player-seasons into Supabase (after a schema change or `data:build`) |
@@ -292,6 +296,25 @@ prerendering.
 - **Ranking points:** when a year's final ranking list lacks points, the latest list with points is used.
 - **Weeks at #1** count days between published lists, so gaps in the data and the 2020 freeze are handled.
 
+### Live season
+
+The mirror stops at 25 May 2026 (matches) and 8 June 2026 (rankings). The rest of
+2026 comes from two sources, picked because they're the most current and match
+Sackmann's formats:
+
+| What | Source | Freshness |
+|---|---|---|
+| Results after the snapshot | [Tennis My Life](https://stats.tennismylife.org/tennis-match-database): ATP results in Sackmann's columns, with serve stats | Daily, plus the current week's matches |
+| Current ranking list | [Tennis Abstract](https://www.tennisabstract.com/reports/atpRankings.html) (Sackmann's site): rank, name, country, birth date | Weekly (Mondays) |
+
+How they're merged (`scripts/etl/live.ts`):
+- **Players:** TML uses ATP codes ("D643"). Each code is matched to a Sackmann id by name and birth date, then by a unique name. Players Sackmann doesn't know get a stable synthetic id (2,000,000 + the code in base 36). No 2026 top-100 player needs one today.
+- **Matches:** only tournaments that start after Sackmann's last one come from TML, so nothing is counted twice. TML dates matches by the day they're played; each tournament takes its first day as its date. For tournament codes Sackmann knows, Sackmann's name and level win (TML calls Monte Carlo "Monte Carlo" and marks Winston-Salem as a Masters).
+- **Rankings:** every fetched list is added to `data/live/atp_rankings_live.csv`, so real weekly lists pile up over time. Weeks without a fetched list (8 June to the first fetch) are rebuilt from the rank each player had at each tournament (tour, Challengers and qualifying). They're only used for peak rank and weeks at #1. Ranking points come from the same per-tournament records.
+- **Checked against the overlap** (January–May 2026, where both Sackmann and TML exist): 98.4% of matches are identical (1,356 of 1,378), and scores agree in 99.4% of them. Rebuilt weekly lists had the right #1 in 14 of 16 weeks, with 96 of the top 100.
+- **Refresh:** `.github/workflows/refresh-data.yml` runs daily (06:17 UTC). It fetches, rebuilds, runs the tests, and commits `data/` when anything changed; the push redeploys the app. With the `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` repository secrets it also reseeds Supabase. Rolling a player who isn't in the `players` table yet adds the row, so a late reseed can't break a roll.
+- **Licenses:** Sackmann's data is CC BY-NC-SA 4.0. TML lists MIT on its site and CC BY-NC-SA on its GitHub; Acedle meets the stricter one (non-commercial, attributed, share-alike). Credits are on `/about`.
+
 ### Data model (Postgres)
 
 Schema: `supabase/migrations/`. Types: `src/lib/supabase/database.types.ts`
@@ -303,6 +326,7 @@ Schema: `supabase/migrations/`. Types: `src/lib/supabase/database.types.ts`
 - `rolls(id, user_id, day, week, year, player_id, season_snapshot jsonb, badges jsonb, base, mult, score, scoring_version, created_at)`, with `UNIQUE(user_id, day)`. `week` is generated (the Monday of `day`).
 - `user_badges`: a view over `rolls.badges` (times earned, first and last day) for the collection page.
 - `create_profile_and_claim(user, handle, avatar, guest)`: run by the OAuth callback. It creates the profile, and only if that's new does it move the guest's rolls. Service role only.
+- `delete_stale_guests(days = 30)`: deletes anonymous users older than 30 days with no roll in the last 30 days (their rolls go too). A `pg_cron` job runs it nightly at 04:23 UTC.
 - `roll_leaderboard(from, to)`: rolls between two UTC days (at most a week), so it serves both the daily and the weekly board. `alltime_leaderboard()`: accounts by `total_score`. Both return the top 100 plus the viewer's own rows, with public columns only: handle, avatar, player, score, rank, the board's size, and `is_viewer`.
 
 ---
@@ -333,14 +357,18 @@ Schema: `supabase/migrations/`. Types: `src/lib/supabase/database.types.ts`
 - Share text plus a public `/rolls/[id]` page with a generated preview card; "top X% of all seasons"
 - `/sandbox` with the luck slider (replaces `/dev/roll`)
 
-**M5 — Live 2026 + launch** (next)
-- A 2026 data source that updates past the June 2026 snapshot, scheduled refresh, deploy to Vercel, attribution page
+**M5 — Live 2026 + launch ✅** (deploy pending)
+- Live 2026 from Tennis My Life + Tennis Abstract, merged into the Sackmann data and checked against the overlap
+- Daily refresh workflow; players added on roll if the table is behind
+- Nightly cleanup of abandoned guests (`pg_cron`)
+- `/about` with credits, licenses, data dates and what's stored
+- Deploy steps in the README; the deploy itself needs the owner's Vercel account
 
 ---
 
 ## 8. Open items
 
-1. **Live 2026 data:** the mirror stops at 8 June 2026 (rankings) and late May 2026 (matches). Keeping 2026 "live" needs a new source that permits non-commercial use. Otherwise 2026 stays frozen at the June snapshot.
+1. **Live sources can change:** Tennis Abstract's report is an HTML page. If its layout changes, the refresh fails loudly and the last good data stays deployed. TML's per-match dates and level codes also differ from Sackmann's (handled in `live.ts`), so a format change there would surface in the overlap check.
 2. **Handles/moderation:** M2 takes the handle from OAuth (username, or first name and last initial). Should M3 let people edit it? Do we need a profanity filter?
 3. **Anti-abuse:** multiple OAuth accounts per person can farm the all-time board. Accept this for v1? Supabase also recommends CAPTCHA on anonymous sign-ins; that needs a widget in the Roll flow.
-4. **Abandoned guests:** each guest that never signs in leaves an anonymous user and its rolls behind. Add a scheduled cleanup (e.g. delete anonymous users older than 30 days) before launch.
+4. **2027:** `LAST_YEAR` is 2026. When 2026 ends, its last ranking list becomes the year-end list. Adding 2027 means raising `LAST_YEAR` and pointing the live fetch at the new season's files.

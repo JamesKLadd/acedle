@@ -1,11 +1,12 @@
 // Builds data/seasons/<year>.json (one record per year-end top-100 player)
-// from Jeff Sackmann's ATP CSVs. Run `npm run data:fetch` first.
+// from Jeff Sackmann's ATP CSVs, plus the live season's newer results and
+// rankings (see live.ts). Run `npm run data:fetch` first.
 //
 //   npm run data:build
 //
 // ACEDLE_RAW_DIR overrides the folder holding the atp_*.csv files.
 
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse } from "csv-parse/sync";
 
@@ -29,9 +30,26 @@ import {
   setWinner,
   slamRoundOrder,
 } from "./parse";
-import { RAW_DIR, SEASONS_DIR } from "./paths";
-
-type Row = Record<string, string>;
+import {
+  addDaysYmd,
+  knownTourneys,
+  latestPoints,
+  mondayOf,
+  normalizeTmlMatches,
+  normName,
+  playerMatcher,
+  publishedList,
+  rankObservations,
+  reconstructList,
+  resolveTmlPlayers,
+  tourneyCode,
+  type PlayerInfo,
+  type PublishedEntry,
+  type RankEntry,
+  type RankObservation,
+  type Row,
+} from "./live";
+import { LIVE_RANKINGS_FILE, LIVE_RAW_DIR, RAW_DIR, SEASONS_DIR } from "./paths";
 
 const num = (s: string | undefined): number | null => {
   if (s === undefined || s.trim() === "") return null;
@@ -44,14 +62,6 @@ function readCsv(file: string): Row[] {
 }
 
 // ---------------------------------------------------------------- players
-
-interface PlayerInfo {
-  name: string;
-  hand: PlayerSeason["hand"];
-  dob: number | null;
-  country: string;
-  heightCm: number | null;
-}
 
 function loadPlayers(): Map<number, PlayerInfo> {
   const players = new Map<number, PlayerInfo>();
@@ -71,12 +81,6 @@ function loadPlayers(): Map<number, PlayerInfo> {
 }
 
 // --------------------------------------------------------------- rankings
-
-interface RankEntry {
-  rank: number;
-  player: number;
-  points: number | null;
-}
 
 interface Rankings {
   dates: number[];
@@ -127,36 +131,47 @@ interface MatchRow {
 
 const SURFACES: readonly Surface[] = ["Hard", "Clay", "Grass", "Carpet"];
 
-function loadMatches(): MatchRow[] {
-  const rows: MatchRow[] = [];
+interface RawMatch {
+  /** The match file's year: some events start in late December of the prior year. */
+  season: number;
+  row: Row;
+}
+
+function readMatchFiles(): RawMatch[] {
+  const raw: RawMatch[] = [];
   const files = readdirSync(RAW_DIR).filter((f) => /^atp_matches_\d{4}\.csv$/.test(f));
   for (const file of files) {
-    // The file's year is the season; some events start in late December of the prior year.
     const season = Number(file.slice(12, 16));
-    for (const r of readCsv(join(RAW_DIR, file))) {
-      const category = classifyEvent(r.tourney_level, r.tourney_name);
-      if (category === "excluded") continue;
-      rows.push({
-        season,
-        code: r.tourney_id.split("-").slice(1).join("-"),
-        tourneyId: r.tourney_id,
-        name: r.tourney_name,
-        category,
-        surface: (SURFACES as readonly string[]).includes(r.surface) ? (r.surface as Surface) : null,
-        date: Number(r.tourney_date),
-        round: r.round,
-        matchNum: Number(r.match_num) || 0,
-        winner: Number(r.winner_id),
-        loser: Number(r.loser_id),
-        winnerEntry: r.winner_entry,
-        winnerRank: num(r.winner_rank),
-        loserRank: num(r.loser_rank),
-        score: r.score,
-        bestOf: Number(r.best_of) || 3,
-        minutes: num(r.minutes),
-        raw: r,
-      });
-    }
+    for (const row of readCsv(join(RAW_DIR, file))) raw.push({ season, row });
+  }
+  return raw;
+}
+
+function toMatchRows(raw: readonly RawMatch[]): MatchRow[] {
+  const rows: MatchRow[] = [];
+  for (const { season, row: r } of raw) {
+    const category = classifyEvent(r.tourney_level, r.tourney_name);
+    if (category === "excluded") continue;
+    rows.push({
+      season,
+      code: r.tourney_id.split("-").slice(1).join("-"),
+      tourneyId: r.tourney_id,
+      name: r.tourney_name,
+      category,
+      surface: (SURFACES as readonly string[]).includes(r.surface) ? (r.surface as Surface) : null,
+      date: Number(r.tourney_date),
+      round: r.round,
+      matchNum: Number(r.match_num) || 0,
+      winner: Number(r.winner_id),
+      loser: Number(r.loser_id),
+      winnerEntry: r.winner_entry,
+      winnerRank: num(r.winner_rank),
+      loserRank: num(r.loser_rank),
+      score: r.score,
+      bestOf: Number(r.best_of) || 3,
+      minutes: num(r.minutes),
+      raw: r,
+    });
   }
   canonicalizeCodes(rows);
   rows.sort(
@@ -192,6 +207,99 @@ function canonicalizeCodes(rows: MatchRow[]) {
     const counts = numericByName.get(r.name);
     if (counts) r.code = [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
   }
+}
+
+// ------------------------------------------------------------ live season
+
+interface LiveSeason {
+  /** Players Sackmann's list doesn't have, under synthetic ids. */
+  players: Map<number, PlayerInfo>;
+  matches: RawMatch[];
+  /** Weekly ranking lists after the snapshot: published where fetched, reconstructed otherwise. */
+  lists: Map<number, RankEntry[]>;
+  /** Day of the latest match in the live files, YYYYMMDD. */
+  resultsThrough: number;
+}
+
+function readPublishedLists(): Map<number, PublishedEntry[]> {
+  const lists = new Map<number, PublishedEntry[]>();
+  for (const r of readCsv(LIVE_RANKINGS_FILE)) {
+    const date = Number(r.ranking_date);
+    const list = lists.get(date) ?? [];
+    list.push({ rank: Number(r.rank), name: r.name, country: r.country, dob: Number(r.birthdate) || null });
+    lists.set(date, list);
+  }
+  return lists;
+}
+
+/**
+ * The live season after the Sackmann snapshot (see live.ts), or null when the
+ * live files haven't been fetched.
+ */
+function loadLiveSeason(players: Map<number, PlayerInfo>, rankings: Rankings, sackmann: readonly RawMatch[]): LiveSeason | null {
+  const file = (name: string) => join(LIVE_RAW_DIR, name);
+  if (!existsSync(file(`${LAST_YEAR}.csv`)) || !existsSync(LIVE_RANKINGS_FILE)) {
+    console.warn("  No live-season files (run npm run data:fetch): building from the Sackmann snapshot only.");
+    return null;
+  }
+  const read = (...names: string[]) => names.filter((n) => existsSync(file(n))).flatMap((n) => readCsv(file(n)));
+
+  const tmlPlayers = readCsv(file("ATP_Database.csv"));
+  const { ids, added } = resolveTmlPlayers(tmlPlayers, players);
+  const known = knownTourneys(sackmann.filter((m) => m.season >= LAST_YEAR - 3).map((m) => m.row));
+  const tourRows = read(`${LAST_YEAR}.csv`, "ongoing_tourneys.csv");
+  const tour = normalizeTmlMatches(tourRows, ids, known);
+  // Challengers and qualifying: only for the ranks players had at each event.
+  const lower = normalizeTmlMatches(
+    read(`${LAST_YEAR}_challenger.csv`, "challenger_ongoing_tourneys.csv", `${LAST_YEAR}_atp_quali.csv`),
+    ids,
+    new Map(),
+  );
+
+  // TML supplies every tournament that starts after Sackmann's last one.
+  const snapshot = sackmann.filter((m) => m.season === LAST_YEAR);
+  const snapshotEnd = Math.max(...snapshot.map((m) => Number(m.row.tourney_date)));
+  const snapshotCodes = new Set(snapshot.map((m) => tourneyCode(m.row.tourney_id)));
+  const matches = tour
+    .filter((r) => Number(r.tourney_date) > snapshotEnd && !snapshotCodes.has(tourneyCode(r.tourney_id)))
+    .map((row) => ({ season: LAST_YEAR, row }));
+
+  // Rankings: start from the last official list, then every rank TML recorded.
+  const lastOfficial = rankings.dates[rankings.dates.length - 1];
+  const observations: RankObservation[] = [
+    ...rankings.byDate.get(lastOfficial)!.map((e) => ({ ...e, listDate: lastOfficial })),
+    ...rankObservations([...tour, ...lower]),
+  ];
+
+  // Published lists name players; find them via TML's player list, then Sackmann's.
+  const tmlByNameDob = new Map(tmlPlayers.map((p) => [`${normName(p.player)}|${p.birthdate}`, p.id]));
+  const matchSackmann = playerMatcher(new Map([...players, ...added]));
+  const resolve = (e: PublishedEntry) => {
+    const code = tmlByNameDob.get(`${normName(e.name)}|${e.dob}`);
+    return (code !== undefined ? ids.get(code) : undefined) ?? matchSackmann(e.name, e.dob);
+  };
+  const published = new Map<number, RankEntry[]>();
+  for (const [date, entries] of [...readPublishedLists()].sort((a, b) => a[0] - b[0])) {
+    if (date <= lastOfficial) continue;
+    const monday = mondayOf(date);
+    const list = publishedList(entries, resolve, latestPoints(observations, monday));
+    published.set(monday, list);
+    observations.push(...list.map((e) => ({ ...e, listDate: monday })));
+  }
+  if (published.size === 0) throw new Error(`No published ranking list after ${lastOfficial} in ${LIVE_RANKINGS_FILE}`);
+
+  const latest = Math.max(...published.keys());
+  const lists = new Map<number, RankEntry[]>();
+  for (let d = addDaysYmd(lastOfficial, 7); d <= latest; d = addDaysYmd(d, 7)) {
+    lists.set(d, published.get(d) ?? reconstructList(observations, d));
+  }
+  const resultsThrough = Math.max(...tourRows.map((r) => Number(r.tourney_date) || 0));
+  console.log(
+    `  live: ${matches.length} matches from events after ${snapshotEnd} (results through ${resultsThrough}), ` +
+      `${published.size} published + ${lists.size - published.size} reconstructed ranking lists up to ${latest}, ` +
+      `${added.size} players not in Sackmann's list`,
+  );
+  return { players: added, matches, lists, resultsThrough };
 }
 
 // ------------------------------------------------------------------ build
@@ -264,7 +372,15 @@ function main() {
   console.log(`Reading raw data from ${RAW_DIR}`);
   const players = loadPlayers();
   const rankings = loadRankings();
-  const matches = loadMatches();
+  const raw = readMatchFiles();
+  const live = loadLiveSeason(players, rankings, raw);
+  if (live) {
+    for (const [id, p] of live.players) players.set(id, p);
+    raw.push(...live.matches);
+    for (const [d, list] of live.lists) rankings.byDate.set(d, list);
+    rankings.dates = [...rankings.byDate.keys()].sort((a, b) => a - b);
+  }
+  const matches = toMatchRows(raw);
   console.log(`  ${players.size} players, ${rankings.dates.length} ranking dates, ${matches.length} matches`);
 
   const lastRankingDate = rankings.dates[rankings.dates.length - 1];
@@ -523,7 +639,17 @@ function main() {
 
   writeFileSync(
     join(SEASONS_DIR, "meta.json"),
-    `${JSON.stringify({ firstYear: FIRST_YEAR, lastYear: LAST_YEAR, liveYear, dataAsOf: lastRankingDate }, null, 2)}\n`,
+    `${JSON.stringify(
+      {
+        firstYear: FIRST_YEAR,
+        lastYear: LAST_YEAR,
+        liveYear,
+        dataAsOf: lastRankingDate,
+        ...(live && { resultsThrough: live.resultsThrough }),
+      },
+      null,
+      2,
+    )}\n`,
   );
   console.log(`Wrote ${total} player-seasons to ${SEASONS_DIR} (live season: ${liveYear ?? "none"})`);
 }

@@ -23,9 +23,6 @@ export default function Home({ searchParams }: PageProps<"/">) {
           Practice in the sandbox: unlimited rolls, adjustable luck →
         </Link>
       </p>
-      <footer className="mt-16 text-xs text-zinc-500">
-        Data by Jeff Sackmann (CC BY-NC-SA 4.0). Not affiliated with the ATP Tour.
-      </footer>
     </main>
   );
 }

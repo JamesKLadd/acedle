@@ -1,11 +1,13 @@
-// Downloads only the ATP files the build needs (tour-level matches, rankings,
-// players) via a shallow sparse checkout.
+// Downloads the source data: the ATP files the build needs (tour-level
+// matches, rankings, players) via a shallow sparse checkout of the Sackmann
+// archive, then the live season's files (see fetch-live.ts).
 //
 //   npm run data:fetch
 
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 
+import { fetchLive } from "./fetch-live";
 import { CHECKOUT_DIR, DATA_REPO } from "./paths";
 
 const PATTERNS = [
@@ -30,3 +32,9 @@ if (existsSync(CHECKOUT_DIR)) {
   git("-C", CHECKOUT_DIR, "checkout");
 }
 git("-C", CHECKOUT_DIR, "log", "-1", "--format=Data snapshot: %h (%cs)");
+
+console.log("Fetching the live season");
+fetchLive().catch((e) => {
+  console.error(e instanceof Error ? e.message : e);
+  process.exit(1);
+});

@@ -22,9 +22,14 @@ The built season data (`data/seasons/`) is committed, so the app runs without
 the raw CSVs. To rebuild it from source:
 
 ```bash
-npm run data:fetch   # sparse clone of the source CSVs into data/raw/
+npm run data:fetch   # sparse clone of the source CSVs into data/raw/, plus the live season
 npm run data:build   # writes data/seasons/*.json
 ```
+
+The 2026 season is live: a GitHub Actions workflow
+(`.github/workflows/refresh-data.yml`) runs those two commands every day and
+commits the result, and the push redeploys the app. See "Live season" in
+SPEC.md for how the sources are merged.
 
 ## Supabase (daily roll and accounts)
 
@@ -49,11 +54,39 @@ without one.
    `http://localhost:3000/auth/callback` (and the production
    `https://<domain>/auth/callback`) to the redirect URLs.
 
+## Deploying (Vercel)
+
+1. **Production branch.** Vercel deploys the repository's default branch, and
+   GitHub only runs scheduled workflows there. Make the branch with the latest
+   code the default (or merge it into `main` and make that the default).
+2. **Import the project.** In Vercel, go to Add New → Project and import the
+   repository. The framework (Next.js) is detected automatically. Add these
+   environment variables for Production and Preview:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY` (the `sb_secret_…` key)
+   - `NEXT_PUBLIC_SITE_URL` (optional): your custom domain, for link previews
+
+   Then deploy.
+3. **Supabase URLs.** In Authentication → URL Configuration, set the Site URL
+   to the production URL and add `https://<domain>/auth/callback` to the
+   redirect URLs. Add `https://*-<team>.vercel.app/auth/callback` too if you
+   want sign-in on preview deployments.
+4. **Guest cleanup.** Apply `supabase/migrations/20261025000000_guest_cleanup.sql`
+   if you haven't already. Integrations → Cron should then list
+   `acedle-delete-stale-guests`.
+5. **Daily refresh.** On GitHub, under Settings → Secrets and variables →
+   Actions, add `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` so the
+   workflow can reseed Supabase. These are optional: rolls add missing players
+   by themselves. Then run "Refresh live data" once from the Actions tab.
+
 ## Data
 
 ATP match and ranking data was collected and compiled by Jeff Sackmann
 (originally `github.com/JeffSackmann/tennis_atp`, now preserved at
 [Aneeshers/tennis-sackmann-archive](https://github.com/Aneeshers/tennis-sackmann-archive)).
 It's licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/),
-and so is the derived data in `data/seasons/`. Acedle is a non-commercial fan
-project and isn't affiliated with the ATP Tour.
+and so is the derived data in `data/seasons/`. The live 2026 season adds
+results from [Tennis My Life](https://stats.tennismylife.org/tennis-match-database)
+and the current ranking list from [Tennis Abstract](https://www.tennisabstract.com/reports/atpRankings.html).
+Acedle is a non-commercial fan project and isn't affiliated with the ATP Tour.

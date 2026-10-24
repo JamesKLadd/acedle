@@ -44,6 +44,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </nav>
         </header>
         {children}
+        <footer className="mx-auto mt-auto w-full max-w-2xl px-4 pt-16 pb-8 text-xs text-zinc-500">
+          Data by Jeff Sackmann / Tennis Abstract (CC BY-NC-SA 4.0) and Tennis My Life. Not affiliated with the ATP
+          Tour.{" "}
+          <Link href="/about" className="underline underline-offset-2 hover:text-foreground">
+            About &amp; data
+          </Link>
+        </footer>
       </body>
     </html>
   );

@@ -8,7 +8,10 @@ export interface SeasonsMeta {
   firstYear: number;
   lastYear: number;
   liveYear: number | null;
+  /** Date of the latest ranking list, YYYYMMDD. */
   dataAsOf: number;
+  /** Day of the latest live-season result, YYYYMMDD (when live data was used). */
+  resultsThrough?: number;
 }
 
 const SEASONS_DIR = join(process.cwd(), "data/seasons");

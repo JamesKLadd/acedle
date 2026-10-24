@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { FIRST_YEAR, LAST_YEAR } from "@/lib/data/years";
 import type { PlayerSeason } from "@/lib/data/types";
+import { fmtYmd } from "@/lib/format";
 import { frameIndexAt, revealTimeline } from "@/lib/reveal";
 import type { ScoreResult } from "@/lib/scoring/types";
 
@@ -78,7 +79,7 @@ export function RollReveal({
           aria-live="polite"
         >
           {yearLanded ? season.year : spinningYear}
-          {yearLanded && season.live && " · live season"}
+          {yearLanded && season.live && ` · live season, ranked as of ${fmtYmd(season.dataAsOf)}`}
         </p>
         {!done && (
           <button onClick={skip} className="text-xs text-zinc-500 underline underline-offset-4 hover:text-foreground">

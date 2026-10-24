@@ -1,0 +1,64 @@
+# Refreshes the live season every day: fetches the latest results and ranking
+# list, rebuilds data/seasons, and commits when anything changed. The push
+# redeploys the app (Vercel deploys every push to the production branch).
+#
+# Optional repository secrets NEXT_PUBLIC_SUPABASE_URL and
+# SUPABASE_SERVICE_ROLE_KEY also reseed the players tables in Supabase.
+# Scheduled runs use the default branch; run it by hand from the Actions tab.
+
+name: Refresh live data
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-data
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # The Sackmann archive is a frozen snapshot, so keep the clone between runs.
+      - uses: actions/cache@v4
+        with:
+          path: data/raw/tennis-sackmann-archive
+          key: sackmann-archive-v1
+
+      - run: npm run data:fetch
+      - run: npm run data:build
+      - run: npm test
+
+      - name: Commit changed data
+        id: commit
+        run: |
+          git add data/seasons data/live
+          if git diff --cached --quiet; then
+            echo "No changes."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Refresh live season data (rankings $(jq -r .dataAsOf data/seasons/meta.json), results through $(jq -r .resultsThrough data/seasons/meta.json))"
+          git push
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Reseed Supabase
+        if: steps.commit.outputs.changed == 'true' && env.SUPABASE_SERVICE_ROLE_KEY != ''
+        run: npm run db:seed

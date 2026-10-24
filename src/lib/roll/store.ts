@@ -19,6 +19,17 @@ export function supabaseRollStore(db: SupabaseClient<Database>): RollStore {
       return data;
     },
     async insert(row) {
+      // The season data can gain players (the live season refreshes daily)
+      // before the players table is reseeded; add the row so the FK holds.
+      const s = row.season_snapshot;
+      const { error: playerError } = await db
+        .from("players")
+        .upsert(
+          { id: s.playerId, name: s.name, country: s.country, hand: s.hand, height_cm: s.heightCm },
+          { ignoreDuplicates: true },
+        );
+      if (playerError) throw new Error(`Couldn't save the player for ${row.day}: ${playerError.message}`);
+
       const { data, error } = await db.from("rolls").insert(row).select().single();
       if (error?.code === UNIQUE_VIOLATION) return null;
       if (error) throw new Error(`Couldn't save the roll for ${row.day}: ${error.message}`);

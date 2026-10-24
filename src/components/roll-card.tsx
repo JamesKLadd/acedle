@@ -1,5 +1,5 @@
 import type { PlayerSeason } from "@/lib/data/types";
-import { fmtMult, fmtScore } from "@/lib/format";
+import { fmtMult, fmtScore, fmtYmd } from "@/lib/format";
 import type { BadgeCategory, EarnedBadge, ScoreResult } from "@/lib/scoring/types";
 
 export const CATEGORY_STYLES: Record<BadgeCategory, string> = {
@@ -85,7 +85,7 @@ export function RollCard({ season: s, score }: { season: PlayerSeason; score: Sc
     <section className={CARD_CLASS}>
       <p className="font-mono text-sm text-zinc-500 dark:text-zinc-400">
         {s.year}
-        {s.live && " · live season"}
+        {s.live && ` · live season, ranked as of ${fmtYmd(s.dataAsOf)}`}
       </p>
       <PlayerLine season={s} />
 
