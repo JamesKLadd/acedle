@@ -40,12 +40,14 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
     );
   }
 
+  // Both the session check (token expiry) and "today" read the clock, so this
+  // renders at request time only, never in a prefetch.
+  await connection();
+
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const claims = data?.claims ?? null;
   const isAccount = Boolean(claims && !claims.is_anonymous);
-  // "Today" depends on the clock, so this can't be part of a prefetch.
-  await connection();
   const day = utcDay();
 
   const [settings, row, profile, params] = await Promise.all([
