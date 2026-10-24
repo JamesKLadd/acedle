@@ -1,14 +1,17 @@
 import Link from "next/link";
 
 import { RollCard } from "@/components/roll-card";
+import { ShareButton } from "@/components/share-button";
 import type { OAuthProvider } from "@/lib/auth/providers";
 import { getAuthSettings, type AuthSettings } from "@/lib/auth/settings";
 import type { SignInNotice } from "@/lib/auth/sign-in";
 import { getViewer } from "@/lib/auth/viewer";
-import { fmtDay } from "@/lib/format";
+import { fmtDay, fmtTopPercent } from "@/lib/format";
 import { getRollBoard } from "@/lib/leaderboard";
 import { toDailyRoll, utcDay } from "@/lib/roll/daily";
 import { supabaseRollStore } from "@/lib/roll/store";
+import { topPercent } from "@/lib/scoring/distribution";
+import { shareText } from "@/lib/share";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 import { signOut } from "./actions";
@@ -54,6 +57,7 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
     searchParams,
   ]);
   const roll = row && toDailyRoll(row);
+  const top = roll ? topPercent(roll.score.total) : 100;
   const mine = board?.find((e) => e.is_viewer);
   const notice =
     typeof params.notice === "string" && Object.hasOwn(NOTICES, params.notice) ? (params.notice as SignInNotice) : null;
@@ -72,6 +76,10 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
             Today&apos;s roll · {fmtDay(day)}
           </h2>
           <RollCard season={roll.season} score={roll.score} />
+          <div className="mt-4 flex flex-wrap items-center gap-4">
+            <ShareButton text={shareText({ ...roll, topPercent: top })} path={`/rolls/${roll.id}`} />
+            <span className="text-sm text-zinc-500">That&apos;s the {fmtTopPercent(top)} of all seasons.</span>
+          </div>
           <p className="mt-3 text-sm text-zinc-500">
             {mine && (
               <>

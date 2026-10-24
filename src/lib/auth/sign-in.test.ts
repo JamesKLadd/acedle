@@ -41,7 +41,7 @@ describe("safeNextPath", () => {
   it.each([
     [null, "/"],
     ["/", "/"],
-    ["/dev/roll", "/dev/roll"],
+    ["/sandbox", "/sandbox"],
     ["/profile?tab=badges", "/profile?tab=badges"],
     ["https://evil.example", "/"],
     ["//evil.example", "/"],

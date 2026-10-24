@@ -33,7 +33,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Everything except static assets and the stateless dev API.
-    "/((?!_next/static|_next/image|favicon.ico|api/dev|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    // Everything except static assets and the stateless sandbox API.
+    "/((?!_next/static|_next/image|favicon.ico|api/sandbox|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

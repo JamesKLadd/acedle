@@ -24,3 +24,25 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Roll reveal: badges and the player slide in. */
+@theme {
+  --animate-reveal: reveal-in 300ms ease-out both;
+
+  @keyframes reveal-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-reveal {
+    animation: none;
+  }
+}

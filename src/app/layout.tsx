@@ -16,6 +16,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Acedle",
   description: "Roll a random tennis season every day and score its real results.",
+  // Absolute base for link previews. Without it, Next uses the Vercel deployment URL.
+  ...(process.env.NEXT_PUBLIC_SITE_URL && { metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL) }),
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -32,6 +34,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </Link>
             <Link href="/leaderboard" className="text-zinc-600 hover:text-foreground dark:text-zinc-400">
               Leaderboards
+            </Link>
+            <Link href="/sandbox" className="text-zinc-600 hover:text-foreground dark:text-zinc-400">
+              Sandbox
             </Link>
             <Link href="/profile" className="text-zinc-600 hover:text-foreground dark:text-zinc-400">
               Profile

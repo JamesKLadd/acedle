@@ -53,12 +53,3 @@ export async function getMyBadges() {
   if (error) throw new Error(`Couldn't load your badges: ${error.message}`);
   return data;
 }
-
-/** A single roll of the viewer's, or null if it isn't theirs (or doesn't exist). */
-export async function getMyRoll(id: string) {
-  const { supabase, userId } = await getViewer();
-  if (!userId || !/^[0-9a-f-]{36}$/i.test(id)) return null;
-  const { data, error } = await supabase.from("rolls").select("*").eq("id", id).eq("user_id", userId).maybeSingle();
-  if (error) throw new Error(`Couldn't load the roll: ${error.message}`);
-  return data;
-}

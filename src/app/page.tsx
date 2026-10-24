@@ -19,8 +19,8 @@ export default function Home({ searchParams }: PageProps<"/">) {
       </div>
 
       <p className="mt-10 text-sm">
-        <Link href="/dev/roll" className="font-medium text-lime-600 underline underline-offset-4 dark:text-lime-400">
-          Practice with unlimited dev rolls →
+        <Link href="/sandbox" className="font-medium text-lime-600 underline underline-offset-4 dark:text-lime-400">
+          Practice in the sandbox: unlimited rolls, adjustable luck →
         </Link>
       </p>
       <footer className="mt-16 text-xs text-zinc-500">

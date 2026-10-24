@@ -4,8 +4,9 @@
 > season (1990–2026), then a random top-100 player from that season. That
 > player-season's real stats earn badges, and the badges add up to your score.
 
-Status: **v0.4**. Milestones 1 (data + scoring engine), 2 (daily roll +
-accounts) and 3 (leaderboards + profile) are built. Badge values are tuned against the real data, and
+Status: **v0.5**. Milestones 1 (data + scoring engine), 2 (daily roll +
+accounts), 3 (leaderboards + profile) and 4 (reveal, sharing, sandbox) are
+built. Badge values are tuned against the real data, and
 `docs/balance-report.md` shows the current numbers.
 
 ---
@@ -51,6 +52,38 @@ accounts) and 3 (leaderboards + profile) are built. Badge values are tuned again
 **Score freezing:** a roll's score never changes after it's made, even if we
 retune badges later. Every roll records the `SCORING_VERSION` that produced it.
 
+**Reveal:** the roll action returns the stored roll, and the browser plays it
+(`src/lib/reveal.ts` is the timeline; `RollReveal` draws it):
+1. The year spins for 1 s and lands, then the player appears.
+2. Points badges drop in one by one (about 2.4 s in all) and the base counts up.
+3. After a pause, each multiplier lands (0.7 s apart) and the total counts up.
+
+A median reveal takes 4.5 s (90% finish within 5.7 s), and the longest, for
+the best seasons, takes 11.8 s. Skip jumps to the
+end. With `prefers-reduced-motion`, the result shows at once. When the reveal
+ends, the page refreshes into the stored roll, with the rank and Share button.
+
+**Sharing:** every roll has a page at `/rolls/[id]`. Anyone with the link can
+open it (an unlisted link: ids are random UUIDs that appear only in links
+people share). Its owner also gets a **Share** button, and everyone else gets a
+"Roll your own" link. The page has a generated preview card
+(`opengraph-image.tsx`) and a title like "2015 Novak Djokovic · 103,061,889
+points". The share text, copied or sent through the system share sheet on
+phones, looks like:
+
+```
+Acedle Oct 24, 2026
+2015 Novak Djokovic (#1)
+🏆🏆🏆🏆🟫🟫🟫🟫🟫📈📈📈🎾🎾🎾🎾🎾🎾🎾🎾🎾🎾🚀🚀🚀🏆🏆🏆💎📈💎💎 ×191.41
+103,061,889 pts · top 0.03%
+https://<site>/rolls/<id>
+```
+
+There's one emoji per badge, by category (🏆 titles, 🟫 surface, 📈 ranking,
+🎾 matches, 🚀 serve, 🧬 profile, 💎 jackpots), then the total multiplier.
+"Top X%" is the share of all 3,700 seasons scoring at least this much, which is
+also the chance of rolling this well.
+
 **Guests:** use Supabase **anonymous sign-in**. The browser signs in as a guest
 the first time a visitor presses Roll (in the browser, so Supabase's per-IP
 rate limit applies to each visitor rather than to our server). A guest has a
@@ -94,8 +127,8 @@ per-country boards.
 
 `/profile` is the viewer's own page (accounts and guests): handle, rolls, total
 points, best roll and all-time rank, with three tabs:
-- **History:** every roll, newest first. Each opens `/rolls/[id]` with the full
-  badge breakdown (own rolls only).
+- **History:** every roll, newest first. Each opens its `/rolls/[id]` page with
+  the full badge breakdown and the Share button.
 - **Badges:** all 55 badges by category, with times earned and the first day.
   Hidden badges show as "???" until earned.
 - **Player-dex:** players, player-seasons and years collected out of all that
@@ -192,7 +225,8 @@ Top seasons:
 
 - Unlimited rolls, labeled **SANDBOX** everywhere. Never saved to profile or leaderboards.
 - **Luck slider** 1×–10×. Year stays uniform. Each player's weight within the year is `1 / rank^k`, where `k` goes from 0 (uniform) at 1× to 1.5 at 10×.
-- The prototype is `/dev/roll`.
+- `/sandbox` (the old `/dev/roll` redirects there), backed by `GET /api/sandbox/roll?luck=1..10`. Use `?year=&player=` to score a specific season.
+- Every sandbox roll plays the reveal, then shows "top X% of all seasons".
 
 ---
 
@@ -213,10 +247,15 @@ src/lib/auth/        Enabled sign-in methods, the viewer for a request, post-sig
                      profile + guest claim (+ tests)
 src/lib/leaderboard.ts  Leaderboard reads (Postgres functions)
 src/lib/profile/     Profile queries; summary, badge collection, player-dex (+ tests)
+src/lib/reveal.ts    Reveal timeline (+ tests)
+src/lib/share.ts     Share text; scoring/distribution.ts ranks a score among all seasons (+ tests)
+src/lib/roll/shared.ts  Reads any roll by id for its public page and preview card
+src/components/      Roll card, reveal, share button, boards, tabs, progress bar
 src/proxy.ts         Refreshes the Supabase session before rendering
 src/app/             Next.js routes: / (daily roll), /leaderboard{,/weekly,/all-time},
-                     /profile{,/badges,/dex}, /rolls/[id], /auth/callback, /auth/error,
-                     /dev/roll, /api/dev/roll; actions.ts (rollToday, signOut)
+                     /profile{,/badges,/dex}, /rolls/[id] (+ opengraph-image), /sandbox,
+                     /api/sandbox/roll, /auth/callback, /auth/error; actions.ts
+                     (rollToday, signOut)
 ```
 
 **Who writes what:** clients only ever read (RLS: own rolls; players and
@@ -239,7 +278,7 @@ prerendering.
 | `npm run balance` | Regenerate the balance report |
 | `npm run db:seed` | Load players + player-seasons into Supabase (after a schema change or `data:build`) |
 | `npm test` / `npm run lint` / `npm run typecheck` | Checks |
-| `npm run dev` | Local app; open `/` for the daily roll or `/dev/roll` |
+| `npm run dev` | Local app; open `/` for the daily roll or `/sandbox` |
 
 ### Data notes
 
@@ -274,7 +313,7 @@ Schema: `supabase/migrations/`. Types: `src/lib/supabase/database.types.ts`
 - Next.js scaffold, Vitest, lint and typecheck
 - ETL that produces 3,700 player-seasons, validated against well-known seasons
 - Scoring engine, 55 badges, balance report, curve tuned to a ~100M top
-- `/dev/roll` page plus `GET /api/dev/roll` (also `?year=&player=` to score a specific season)
+- `/dev/roll` page plus `GET /api/dev/roll` (also `?year=&player=` to score a specific season); now `/sandbox`
 
 **M2 — Daily roll + accounts ✅**
 - Supabase schema with RLS (`supabase/migrations/`), plus `npm run db:seed` for player data
@@ -289,10 +328,12 @@ Schema: `supabase/migrations/`. Types: `src/lib/supabase/database.types.ts`
 - Running totals per account, and leaderboard functions (second migration)
 - Site nav; "#N of M today" on the home page
 
-**M4 — Fun layer** (next)
-- Reveal animation, share text plus OG image, `/sandbox` with luck slider
+**M4 — Fun layer ✅**
+- Reveal animation for daily and sandbox rolls (skip, reduced motion)
+- Share text plus a public `/rolls/[id]` page with a generated preview card; "top X% of all seasons"
+- `/sandbox` with the luck slider (replaces `/dev/roll`)
 
-**M5 — Live 2026 + launch**
+**M5 — Live 2026 + launch** (next)
 - A 2026 data source that updates past the June 2026 snapshot, scheduled refresh, deploy to Vercel, attribution page
 
 ---

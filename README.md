@@ -13,7 +13,7 @@ distribution.
 
 ```bash
 npm install
-npm run dev          # http://localhost:3000 (daily roll) and /dev/roll (unlimited)
+npm run dev          # http://localhost:3000 (daily roll) and /sandbox (unlimited)
 npm test             # unit + data regression tests
 npm run balance      # regenerate docs/balance-report.md after badge changes
 ```
@@ -28,7 +28,7 @@ npm run data:build   # writes data/seasons/*.json
 
 ## Supabase (daily roll and accounts)
 
-The daily roll, guests and sign-in need a Supabase project. `/dev/roll` works
+The daily roll, guests and sign-in need a Supabase project. `/sandbox` works
 without one.
 
 1. Copy `.env.example` to `.env.local` and fill in the project URL and keys.
