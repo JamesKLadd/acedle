@@ -247,14 +247,14 @@ export function RollReveal({
         </p>
       )}
 
-      <BadgeSections badges={timeline.badges.slice(0, frame.shown)} rowClass="animate-reveal" listRef={flipRef} />
-
       <Scoreboard
         base={Math.round(tween(prev.base, frame.base))}
         multiplier={frame.multiplier}
         total={Math.round(tween(prev.total, frame.total))}
         final={done}
       />
+
+      <BadgeSections badges={timeline.badges.slice(0, frame.shown)} rowClass="animate-reveal" listRef={flipRef} />
       <p className="sr-only" aria-live="polite">
         {done ? `${season.year} ${season.name}: ${score.total} points` : ""}
       </p>

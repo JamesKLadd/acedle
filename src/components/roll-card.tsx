@@ -248,8 +248,8 @@ export function RollCard({
       </div>
       <PlayerName>{s.name}</PlayerName>
       <PlayerFacts season={s} />
-      <BadgeSections badges={score.badges} />
       <Scoreboard base={score.base} multiplier={score.multiplier} total={score.total} />
+      <BadgeSections badges={score.badges} />
     </RarityFrame>
   );
 }
