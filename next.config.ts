@@ -1,9 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  // Season data is read from disk at request time; make sure deployments ship it.
+  outputFileTracingIncludes: {
+    "/api/**": ["./data/seasons/**"],
+  },
   turbopack: {
     rules: {
       "*.css": {
