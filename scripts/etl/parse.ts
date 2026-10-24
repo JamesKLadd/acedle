@@ -1,4 +1,4 @@
-// Pure helpers for interpreting raw Sackmann match rows.
+// Pure helpers for interpreting raw Sackmann rows.
 
 import type { EntryType, EventCategory, SlamRound } from "../../src/lib/data/types";
 
@@ -141,4 +141,27 @@ export function dayNumber(yyyymmdd: number): number {
   const m = Math.floor((yyyymmdd % 10000) / 100);
   const d = yyyymmdd % 100;
   return Date.UTC(y, m - 1, d) / 86_400_000;
+}
+
+/**
+ * Ranking ids the archive later gave to someone else. Its rankings list
+ * Martin Damm Sr. (born 1972) under 102093 until 2003, but atp_players.csv
+ * now uses 102093 for his son, Martin Damm Jr. (born 2003), and the matches
+ * use 210013 for the father.
+ */
+export const REASSIGNED_RANKING_IDS: ReadonlyMap<number, number> = new Map([[102093, 210013]]);
+
+/**
+ * The player a ranking entry is for. An entry dated before its player was
+ * born is for whoever held the id back then (see REASSIGNED_RANKING_IDS),
+ * or null when we don't know who that was.
+ */
+export function rankedPlayer(
+  id: number,
+  date: number,
+  dob: number | null,
+  reassigned: ReadonlyMap<number, number> = REASSIGNED_RANKING_IDS,
+): number | null {
+  if (dob === null || date >= dob) return id;
+  return reassigned.get(id) ?? null;
 }

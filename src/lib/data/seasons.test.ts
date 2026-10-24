@@ -63,6 +63,19 @@ describe("season data", () => {
     expect(season(2010, "John Isner").matches.longestWinMinutes).toBe(665);
   });
 
+  it("has plausible ages (a reassigned ranking id shows up as a negative one)", () => {
+    for (const s of [...loadSeasons().values()].flat()) {
+      if (s.age !== null) expect(s.age, `${s.year} ${s.name}`).toBeGreaterThanOrEqual(15);
+    }
+  });
+
+  it("Martin Damm Sr. 1993, whom the rankings list under his son's id", () => {
+    const s = season(1993, "Martin Damm Sr");
+    expect(s.playerId).toBe(210013);
+    expect([s.country, s.hand, s.age]).toEqual(["CZE", "R", 21]);
+    expect([s.matches.wins, s.matches.losses]).toEqual([16, 22]);
+  });
+
   it("canonicalizes title codes across padding changes", () => {
     expect(season(2025, "Jannik Sinner").defendedTitles).toEqual(expect.arrayContaining(["580", "605"]));
   });
