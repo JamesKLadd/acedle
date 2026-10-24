@@ -202,23 +202,27 @@ export function Scoreboard({
 }) {
   const label = "text-[10px] font-semibold tracking-[0.18em] text-panel-fg/60 uppercase";
   return (
-    <dl className="mt-5 flex items-center gap-4 rounded-xl bg-panel px-4 py-3 text-panel-fg">
-      <div>
-        <dt className={label}>Base</dt>
-        <dd className="tabular font-mono text-lg">{fmtScore(base)}</dd>
+    // Phones: base × mult on one line, the score on its own line below (a
+    // great season's score is 11 characters). From sm up, all on one line.
+    <dl className="mt-5 flex flex-col gap-2 rounded-xl bg-panel px-4 py-3 text-panel-fg sm:flex-row sm:items-center sm:gap-4">
+      <div className="flex items-center gap-4">
+        <div>
+          <dt className={label}>Base</dt>
+          <dd className="tabular font-mono text-lg">{fmtScore(base)}</dd>
+        </div>
+        <span className="text-panel-fg/40" aria-hidden>
+          ×
+        </span>
+        <div>
+          <dt className={label}>Mult</dt>
+          <dd className="tabular font-mono text-lg">{fmtMult(multiplier).slice(1)}</dd>
+        </div>
       </div>
-      <span className="text-panel-fg/40" aria-hidden>
-        ×
-      </span>
-      <div>
-        <dt className={label}>Mult</dt>
-        <dd className="tabular font-mono text-lg">{fmtMult(multiplier).slice(1)}</dd>
-      </div>
-      <span className="ml-auto h-10 w-px bg-panel-fg/15" aria-hidden />
-      <div className="text-right">
+      <span className="ml-auto hidden h-10 w-px shrink-0 bg-panel-fg/15 sm:block" aria-hidden />
+      <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 border-t border-panel-fg/15 pt-2 sm:block sm:border-0 sm:pt-0 sm:text-right">
         <dt className={label}>Score</dt>
         <dd
-          className={`tabular font-mono text-2xl font-bold transition-[color,text-shadow] duration-500 sm:text-3xl ${
+          className={`tabular min-w-0 font-mono text-2xl font-bold break-all transition-[color,text-shadow] duration-500 sm:text-3xl ${
             final ? "text-[#d4f53c] [text-shadow:0_0_18px_rgb(212_245_60/0.45)]" : ""
           }`}
         >

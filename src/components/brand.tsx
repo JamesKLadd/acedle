@@ -19,7 +19,7 @@ export function Wordmark() {
   return (
     <span className="flex items-center gap-2">
       <BallIcon className="size-6" />
-      <span className="font-display text-2xl leading-none font-extrabold tracking-wide uppercase">Acedle</span>
+      <span className="font-display text-2xl leading-none font-extrabold tracking-wide uppercase max-[359px]:sr-only">Acedle</span>
     </span>
   );
 }

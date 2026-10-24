@@ -15,7 +15,7 @@ export function SiteNav() {
   return <NavLinks pathname={usePathname()} />;
 }
 
-/** The links themselves; labels hide on narrow screens. Without a pathname nothing is highlighted. */
+/** The links themselves; labels show from md up (the header is full below that). Without a pathname nothing is highlighted. */
 export function NavLinks({ pathname }: { pathname: string | null }) {
   return (
     <nav className="flex items-center gap-1" aria-label="Main">
@@ -32,7 +32,7 @@ export function NavLinks({ pathname }: { pathname: string | null }) {
             }`}
           >
             <Icon className="size-4" aria-hidden />
-            <span className="hidden sm:inline">{label}</span>
+            <span className="hidden md:inline">{label}</span>
           </Link>
         );
       })}
