@@ -90,6 +90,12 @@ export default function AboutPage() {
           <A href="https://github.com/JamesKLadd/acedle">Acedle repository</A> under the same CC BY-NC-SA 4.0 license.
           Acedle is a non-commercial fan project and isn&apos;t affiliated with the ATP Tour or any player.
         </p>
+        <p>
+          On systems without flag emoji (like Windows), flags are drawn with{" "}
+          <A href="https://github.com/jdecked/twemoji">Twemoji</A> art (
+          <A href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</A>) via the{" "}
+          <A href="https://github.com/talkjs/country-flag-emoji-polyfill">country-flag-emoji-polyfill</A> font.
+        </p>
       </Section>
 
       <Section title="What we store">

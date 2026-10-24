@@ -5,6 +5,7 @@ import { Suspense } from "react";
 
 import { Wordmark } from "@/components/brand";
 import { NextRollPill, RollReadyDot } from "@/components/countdown";
+import { FlagPolyfill } from "@/components/flag-polyfill";
 import { HeaderControls } from "@/components/header-controls";
 import { NavLinks, SiteNav } from "@/components/site-nav";
 import { THEME_SCRIPT } from "@/lib/theme-script";
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body className="flex min-h-full flex-col">
+        <FlagPolyfill />
         <header className="sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur">
           <div className="mx-auto flex w-full max-w-2xl items-center gap-2 px-4 py-2.5">
             <Link href="/" className="relative rounded-lg focus-visible:outline-2 focus-visible:outline-accent">

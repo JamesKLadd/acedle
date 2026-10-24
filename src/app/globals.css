@@ -105,15 +105,17 @@
   --color-background: var(--bg);
   --color-foreground: var(--fg);
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-barlow);
+  /* "Twemoji Country Flags" only covers flag emoji, and only loads where the
+     system has none (Windows); see src/components/flag-polyfill.tsx. */
+  --font-sans: "Twemoji Country Flags", var(--font-geist-sans);
+  --font-mono: "Twemoji Country Flags", var(--font-geist-mono);
+  --font-display: "Twemoji Country Flags", var(--font-barlow);
 }
 
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: "Twemoji Country Flags", var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Scores and ranks line up as they count. */
