@@ -40,11 +40,14 @@ function reelEase(t: number) {
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 
-/** A slot-machine reel: scrolls through `items` and stops on the last one. */
-function Reel({ items, progress, className = "" }: { items: readonly string[]; progress: number; className?: string }) {
+/**
+ * A slot-machine reel: scrolls through `items` and stops on the last one.
+ * Inline reels are as wide as their widest item; block reels fill the line.
+ */
+function Reel({ items, progress, inline = false }: { items: readonly string[]; progress: number; inline?: boolean }) {
   const pos = reelEase(clamp01(progress)) * (items.length - 1);
   return (
-    <span className={`relative block overflow-hidden ${className}`} style={{ height: "1.15em" }}>
+    <span className={`relative overflow-hidden ${inline ? "inline-block align-bottom" : "block"}`} style={{ height: "1.15em" }}>
       <span
         className={`block ${progress < 0.7 ? "blur-[0.6px]" : ""}`}
         style={{ transform: `translateY(${-pos * 1.15}em)` }}
@@ -214,7 +217,7 @@ export function RollReveal({
       <div className="flex items-start justify-between gap-3">
         <SeasonLabel
           season={season}
-          year={yearLanded ? undefined : <Reel items={years} progress={yearProgress} className="inline-block w-[4ch]" />}
+          year={yearLanded ? undefined : <Reel items={years} progress={yearProgress} inline />}
         />
         {done ? (
           <RarityChip topPercent={topPercent} className="animate-pop" />

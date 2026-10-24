@@ -37,17 +37,26 @@ export function NextRollCountdown() {
   );
 }
 
-/** Header pill: "Roll ready" until today's roll is seen, then the countdown. */
-export function NextRollPill() {
+/** Whether this browser hasn't seen today's roll yet (null until mounted). */
+function useRollReady(): { ready: boolean; now: number } | null {
   const now = useNowSeconds();
   const last = useLastRollDay();
   if (now === null) return null;
-  const today = utcDayOf(now * 1000);
-  if (last !== today) {
+  return { ready: last !== utcDayOf(now * 1000), now };
+}
+
+/**
+ * Header pill from sm up: "Roll ready" until today's roll is seen, then the
+ * countdown. Phones get RollReadyDot instead (the header is full there).
+ */
+export function NextRollPill() {
+  const state = useRollReady();
+  if (state === null) return null;
+  if (state.ready) {
     return (
       <Link
         href="/"
-        className="flex h-8 items-center gap-1.5 rounded-full bg-accent px-3 text-xs font-bold text-accent-ink shadow-sm hover:brightness-105"
+        className="hidden h-8 items-center gap-1.5 rounded-full bg-accent px-3 text-xs font-bold whitespace-nowrap text-accent-ink shadow-sm hover:brightness-105 sm:flex"
       >
         <span className="relative flex size-2">
           <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent-ink/50 motion-reduce:hidden" />
@@ -63,7 +72,20 @@ export function NextRollPill() {
       title="Next roll (midnight UTC)"
     >
       <Timer className="size-3.5" aria-hidden />
-      <span className="tabular font-mono">{fmtCountdown(msUntilReset(now * 1000))}</span>
+      <span className="tabular font-mono">{fmtCountdown(msUntilReset(state.now * 1000))}</span>
+    </span>
+  );
+}
+
+/** On phones, a pulsing dot on the logo while today's roll is waiting. Render inside the logo link. */
+export function RollReadyDot() {
+  const state = useRollReady();
+  if (!state?.ready) return null;
+  return (
+    <span className="absolute top-0 left-4.5 flex size-2.5 sm:hidden">
+      <span className="absolute inline-flex size-full animate-ping rounded-full bg-cat-surface/60 motion-reduce:hidden" />
+      <span className="relative inline-flex size-2.5 rounded-full bg-cat-surface ring-2 ring-bg" />
+      <span className="sr-only">(today&apos;s roll is ready)</span>
     </span>
   );
 }

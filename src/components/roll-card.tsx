@@ -86,7 +86,7 @@ export function SeasonLabel({ season: s, year }: { season: PlayerSeason; year?: 
     <span className="font-display text-lg font-bold tracking-wider text-accent-text">
       {year ?? s.year}
       {s.live && year === undefined && (
-        <span className="ml-2 align-middle font-sans text-xs font-medium tracking-normal text-muted">
+        <span className="block font-sans text-xs font-medium tracking-normal text-muted sm:ml-2 sm:inline sm:align-middle">
           live season · ranked as of {fmtYmd(s.dataAsOf)}
         </span>
       )}

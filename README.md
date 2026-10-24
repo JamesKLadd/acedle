@@ -90,3 +90,7 @@ and so is the derived data in `data/seasons/`. The live 2026 season adds
 results from [Tennis My Life](https://stats.tennismylife.org/tennis-match-database)
 and the current ranking list from [Tennis Abstract](https://www.tennisabstract.com/reports/atpRankings.html).
 Acedle is a non-commercial fan project and isn't affiliated with the ATP Tour.
+
+The link preview images (`opengraph-image.tsx` files, styled in `src/lib/og.tsx`)
+use Barlow Condensed from `assets/fonts/`, under the SIL Open Font License
+(`assets/fonts/OFL.txt`).

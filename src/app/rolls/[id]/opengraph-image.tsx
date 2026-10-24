@@ -1,75 +1,86 @@
 import { ImageResponse } from "next/og";
 
 import { fmtDate, fmtMult, fmtScore, fmtTopPercent } from "@/lib/format";
+import { OG, OG_RARITY, OG_SIZE, OgChip, OgFrame, ogFonts } from "@/lib/og";
+import { rarityOf } from "@/lib/rarity";
 import { getSharedRoll } from "@/lib/roll/shared";
 import { topPercent } from "@/lib/scoring/distribution";
 
 export const alt = "A roll on Acedle";
-export const size = { width: 1200, height: 630 };
+export const size = OG_SIZE;
 export const contentType = "image/png";
-
-const LIME = "#84cc16";
-const MUTED = "#a1a1aa";
 
 /** Link preview card: the season, the score and who rolled it. */
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const shared = await getSharedRoll((await params).id);
-  const frame = {
-    width: "100%",
-    height: "100%",
-    display: "flex",
-    flexDirection: "column" as const,
-    padding: 64,
-    background: "#09090b",
-    color: "#fafafa",
-  };
+  const fonts = await ogFonts();
 
   if (!shared) {
     return new ImageResponse(
       (
-        <div style={{ ...frame, justifyContent: "center", alignItems: "center" }}>
-          <div style={{ fontSize: 96, fontWeight: 700 }}>Acedle</div>
-          <div style={{ fontSize: 36, color: MUTED }}>Roll a random tennis season every day.</div>
-        </div>
+        <OgFrame>
+          <div style={{ display: "flex", marginTop: 120, fontSize: 120, fontWeight: 800 }}>ROLL NOT FOUND</div>
+          <div style={{ display: "flex", fontSize: 40, color: OG.muted }}>Roll a random tennis season every day.</div>
+        </OgFrame>
       ),
-      size,
+      { ...size, fonts },
     );
   }
 
   const { roll, handle } = shared;
   const { season: s, score } = roll;
+  const top = topPercent(score.total);
+  const rarity = rarityOf(top);
+  const color = OG_RARITY[rarity.id];
+
   return new ImageResponse(
     (
-      <div style={frame}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 30, color: MUTED }}>
-          <div style={{ display: "flex", color: LIME, fontWeight: 700, letterSpacing: 4 }}>ACEDLE</div>
-          <div style={{ display: "flex" }}>{fmtDate(roll.day)}</div>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", marginTop: 56, flexGrow: 1 }}>
-          <div style={{ display: "flex", fontSize: 44, color: LIME, fontWeight: 700 }}>{s.year}</div>
-          <div style={{ display: "flex", fontSize: 92, fontWeight: 700, lineHeight: 1.05 }}>{s.name}</div>
-          <div style={{ display: "flex", fontSize: 34, color: MUTED, marginTop: 12 }}>
-            {`#${s.ranking.final} · ${s.country} · ${s.matches.wins}–${s.matches.losses} · ${s.titles.length} titles`}
+      <OgFrame aside={fmtDate(roll.day).toUpperCase()}>
+        <div style={{ display: "flex", flexDirection: "column", marginTop: 36, flexGrow: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", fontSize: 52, fontWeight: 800, color: OG.accent }}>{String(s.year)}</div>
+            <OgChip color={color}>{`${rarity.label} · ${fmtTopPercent(top)}`}</OgChip>
+          </div>
+          <div style={{ display: "flex", fontSize: 108, fontWeight: 800, lineHeight: 0.95, textTransform: "uppercase" }}>
+            {s.name}
+          </div>
+          <div style={{ display: "flex", fontSize: 34, color: OG.muted, marginTop: 14 }}>
+            {`#${s.ranking.final} · ${s.country} · ${s.matches.wins}–${s.matches.losses} · ${s.titles.length} ${
+              s.titles.length === 1 ? "title" : "titles"
+            } · rolled by ${handle ?? "a guest"}`}
           </div>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", fontSize: 28, color: MUTED }}>SCORE</div>
-            <div style={{ display: "flex", fontSize: 100, fontWeight: 700, color: LIME, lineHeight: 1 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "22px 36px",
+            borderRadius: 26,
+            background: OG.bg,
+            border: `2px solid ${OG.line}`,
+          }}
+        >
+          <div style={{ display: "flex", gap: 48, fontSize: 30, color: OG.muted, letterSpacing: 2 }}>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ display: "flex" }}>BADGES</div>
+              <div style={{ display: "flex", fontSize: 52, fontWeight: 800, color: OG.fg }}>{String(score.badges.length)}</div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ display: "flex" }}>MULT</div>
+              <div style={{ display: "flex", fontSize: 52, fontWeight: 800, color: OG.fg }}>{fmtMult(score.multiplier)}</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+            <div style={{ display: "flex", fontSize: 30, color: OG.muted, letterSpacing: 2 }}>SCORE</div>
+            <div style={{ display: "flex", fontSize: 104, fontWeight: 800, lineHeight: 1, color: OG.accent }}>
               {fmtScore(score.total)}
             </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", fontSize: 30, color: MUTED }}>
-            <div style={{ display: "flex" }}>
-              {`${score.badges.length} badges · ${fmtMult(score.multiplier)} · ${fmtTopPercent(topPercent(score.total))}`}
-            </div>
-            <div style={{ display: "flex", marginTop: 8 }}>{`Rolled by ${handle ?? "a guest"}`}</div>
-          </div>
         </div>
-      </div>
+      </OgFrame>
     ),
-    size,
+    { ...size, fonts },
   );
 }

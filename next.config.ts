@@ -10,8 +10,12 @@ const nextConfig: NextConfig = {
     // The player-dex counts every rollable player; roll pages rank a score
     // against every season.
     "/profile/**": ["./data/seasons/**"],
-    "/rolls/**": ["./data/seasons/**"],
+    // Roll pages and their preview images; the images also read the fonts.
+    "/rolls/**": ["./data/seasons/**", "./assets/fonts/*.ttf"],
     "/api/**": ["./data/seasons/**"],
+    // Link preview images (src/lib/og.tsx).
+    "/opengraph-image": ["./assets/fonts/*.ttf"],
+    "/leaderboard/**": ["./assets/fonts/*.ttf"],
   },
   async redirects() {
     // The sandbox started out as the /dev/roll prototype.

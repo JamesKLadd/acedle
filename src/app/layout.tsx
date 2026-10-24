@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { Wordmark } from "@/components/brand";
-import { NextRollPill } from "@/components/countdown";
+import { NextRollPill, RollReadyDot } from "@/components/countdown";
 import { HeaderControls } from "@/components/header-controls";
 import { NavLinks, SiteNav } from "@/components/site-nav";
 import { THEME_SCRIPT } from "@/lib/theme-script";
@@ -56,8 +56,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col">
         <header className="sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur">
           <div className="mx-auto flex w-full max-w-2xl items-center gap-2 px-4 py-2.5">
-            <Link href="/" className="rounded-lg focus-visible:outline-2 focus-visible:outline-accent">
+            <Link href="/" className="relative rounded-lg focus-visible:outline-2 focus-visible:outline-accent">
               <Wordmark />
+              <RollReadyDot />
             </Link>
             <span className="mr-auto pl-2">
               <NextRollPill />
@@ -65,7 +66,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Suspense fallback={<NavLinks pathname={null} />}>
               <SiteNav />
             </Suspense>
-            <span className="mx-1 h-5 w-px bg-line" aria-hidden />
+            <span className="mx-1 h-5 w-px shrink-0 bg-line" aria-hidden />
             <HeaderControls />
           </div>
         </header>
