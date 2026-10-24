@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ageAt, classifyEvent, parseScore, setWinner } from "./parse";
+import { ageAt, classifyEvent, parseScore, rankedPlayer, setWinner } from "./parse";
 
 describe("classifyEvent", () => {
   it.each([
@@ -58,5 +58,19 @@ describe("ageAt", () => {
     expect(ageAt(19870522, 20151231)).toBe(28);
     expect(ageAt(19870522, 20150521)).toBe(27);
     expect(ageAt(19870522, 20150522)).toBe(28);
+  });
+});
+
+describe("rankedPlayer", () => {
+  it("gives entries from before the player's birth to whoever held the id then", () => {
+    // Martin Damm Jr. (102093, born 2003) inherited his father's ranking id.
+    expect(rankedPlayer(102093, 19931227, 20030930)).toBe(210013);
+    expect(rankedPlayer(102093, 20251229, 20030930)).toBe(102093);
+  });
+
+  it("flags entries from before the player's birth with no known owner", () => {
+    expect(rankedPlayer(5, 19900101, 19950101, new Map())).toBeNull();
+    expect(rankedPlayer(5, 19900101, 19950101, new Map([[5, 6]]))).toBe(6);
+    expect(rankedPlayer(5, 19900101, null, new Map())).toBe(5);
   });
 });
