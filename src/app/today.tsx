@@ -31,7 +31,7 @@ const FALLBACK_SETTINGS: AuthSettings = { guests: true, providers: [] };
 export async function Today({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   if (!isSupabaseConfigured()) {
     return (
-      <p className="text-zinc-500">
+      <p className="text-muted">
         Daily rolls need Supabase. Copy <code>.env.example</code> to <code>.env.local</code> and fill it in.
       </p>
     );
@@ -65,26 +65,26 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
   return (
     <div className="flex flex-col gap-6">
       {notice && (
-        <p className="rounded-lg bg-lime-50 p-3 text-sm text-lime-900 dark:bg-lime-950 dark:text-lime-200">
+        <p className="rounded-lg bg-accent-soft p-3 text-sm text-fg">
           {NOTICES[notice]}
         </p>
       )}
 
       {roll ? (
         <div>
-          <h2 className="mb-3 text-sm font-medium tracking-wide text-zinc-500 uppercase">
+          <h2 className="mb-3 text-sm font-medium tracking-wide text-muted uppercase">
             Today&apos;s roll · {fmtDay(day)}
           </h2>
           <RollCard season={roll.season} score={roll.score} />
           <div className="mt-4 flex flex-wrap items-center gap-4">
             <ShareButton text={shareText({ ...roll, topPercent: top })} path={`/rolls/${roll.id}`} />
-            <span className="text-sm text-zinc-500">That&apos;s the {fmtTopPercent(top)} of all seasons.</span>
+            <span className="text-sm text-muted">That&apos;s the {fmtTopPercent(top)} of all seasons.</span>
           </div>
-          <p className="mt-3 text-sm text-zinc-500">
+          <p className="mt-3 text-sm text-muted">
             {mine && (
               <>
-                You&apos;re <strong className="text-foreground">#{mine.rank}</strong> of {mine.entries} today ·{" "}
-                <Link href="/leaderboard" className="underline underline-offset-4 hover:text-foreground">
+                You&apos;re <strong className="text-fg">#{mine.rank}</strong> of {mine.entries} today ·{" "}
+                <Link href="/leaderboard" className="underline underline-offset-4 hover:text-fg">
                   Leaderboards
                 </Link>{" "}
                 ·{" "}
@@ -98,18 +98,18 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
       ) : settings.providers.length > 0 ? (
         <p>Sign in to roll today&apos;s season.</p>
       ) : (
-        <p className="text-zinc-500">
+        <p className="text-muted">
           Daily rolls aren&apos;t open yet: turn on anonymous sign-ins or an OAuth provider in Supabase.
         </p>
       )}
 
       {isAccount ? (
-        <div className="flex items-center gap-3 text-sm text-zinc-500">
+        <div className="flex items-center gap-3 text-sm text-muted">
           <span>
-            Signed in as <strong className="text-foreground">{profile?.data?.handle ?? "player"}</strong>
+            Signed in as <strong className="text-fg">{profile?.data?.handle ?? "player"}</strong>
           </span>
           <form action={signOut}>
-            <button className="underline underline-offset-4 hover:text-foreground">Sign out</button>
+            <button className="underline underline-offset-4 hover:text-fg">Sign out</button>
           </form>
         </div>
       ) : (
@@ -122,8 +122,8 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
 function SignInPrompt({ providers, guest }: { providers: readonly OAuthProvider[]; guest: boolean }) {
   if (providers.length === 0) return null;
   return (
-    <div className="rounded-xl border border-dashed border-zinc-300 p-4 dark:border-zinc-700">
-      <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">
+    <div className="rounded-xl border border-dashed border-line p-4">
+      <p className="mb-3 text-sm text-muted">
         {guest ? "You're playing as a guest. " : ""}
         Sign in to save your rolls and appear on the leaderboards. A new account keeps the rolls you made as a guest.
       </p>
@@ -133,5 +133,5 @@ function SignInPrompt({ providers, guest }: { providers: readonly OAuthProvider[
 }
 
 export function TodaySkeleton() {
-  return <div className="h-16 w-64 animate-pulse rounded-lg bg-zinc-100 dark:bg-zinc-900" />;
+  return <div className="h-16 w-64 animate-pulse rounded-lg bg-surface-2" />;
 }

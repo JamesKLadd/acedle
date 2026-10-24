@@ -12,7 +12,7 @@ export default function AuthErrorPage({ searchParams }: PageProps<"/auth/error">
         <Reason searchParams={searchParams} />
       </Suspense>
       <p className="mt-8">
-        <Link href="/" className="font-medium text-lime-600 underline underline-offset-4 dark:text-lime-400">
+        <Link href="/" className="font-medium text-accent-text underline decoration-2 underline-offset-4">
           ← Back to Acedle
         </Link>
       </p>
@@ -23,5 +23,5 @@ export default function AuthErrorPage({ searchParams }: PageProps<"/auth/error">
 async function Reason({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { message } = await searchParams;
   if (typeof message !== "string") return null;
-  return <p className="mt-3 text-zinc-600 dark:text-zinc-400">{message}</p>;
+  return <p className="mt-3 text-muted">{message}</p>;
 }

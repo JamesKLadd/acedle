@@ -7,7 +7,7 @@ export default function Home({ searchParams }: PageProps<"/">) {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-16">
       <h1 className="text-5xl font-bold tracking-tight">Acedle</h1>
-      <p className="mt-3 text-lg text-zinc-600 dark:text-zinc-400">
+      <p className="mt-3 text-lg text-muted">
         Roll a random season from 1990 to today, then a random top-100 player from it. Their real results earn badges,
         and the badges add up to your score. One roll a day.
       </p>
@@ -19,7 +19,7 @@ export default function Home({ searchParams }: PageProps<"/">) {
       </div>
 
       <p className="mt-10 text-sm">
-        <Link href="/sandbox" className="font-medium text-lime-600 underline underline-offset-4 dark:text-lime-400">
+        <Link href="/sandbox" className="font-medium text-accent-text underline decoration-2 underline-offset-4">
           Practice in the sandbox: unlimited rolls, adjustable luck →
         </Link>
       </p>

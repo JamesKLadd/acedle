@@ -6,7 +6,7 @@ import { getAllTimeBoard } from "@/lib/leaderboard";
 import { summarizeRolls } from "@/lib/profile/collection";
 import { getMyProfile, getMyRolls } from "@/lib/profile/queries";
 
-const linkClass = "font-medium text-lime-600 underline underline-offset-4 dark:text-lime-400";
+const linkClass = "font-medium text-accent-text underline decoration-2 underline-offset-4";
 
 /** Name and headline stats for the viewer (account or guest). */
 export async function ProfileHeader() {
@@ -22,7 +22,7 @@ export async function ProfileHeader() {
   return (
     <div>
       <h1 className="text-3xl font-bold">{profile?.handle ?? (viewer.isGuest ? "Guest" : "Your profile")}</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-muted">
         {profile ? (
           `Joined ${fmtDate(profile.created_at.slice(0, 10))}`
         ) : viewer.isGuest ? (
@@ -54,8 +54,8 @@ export async function ProfileHeader() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-800">
-      <dt className="text-xs text-zinc-500 uppercase">{label}</dt>
+    <div className="rounded-lg border border-line px-3 py-2">
+      <dt className="text-xs text-muted uppercase">{label}</dt>
       <dd className="font-mono text-lg font-semibold tabular-nums">{value}</dd>
     </div>
   );
@@ -64,10 +64,10 @@ function Stat({ label, value }: { label: string; value: string }) {
 export function ProfileHeaderSkeleton() {
   return (
     <div aria-busy>
-      <div className="h-9 w-48 animate-pulse rounded bg-zinc-100 dark:bg-zinc-900" />
+      <div className="h-9 w-48 animate-pulse rounded bg-surface-2" />
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="h-16 animate-pulse rounded-lg bg-zinc-100 dark:bg-zinc-900" />
+          <div key={i} className="h-16 animate-pulse rounded-lg bg-surface-2" />
         ))}
       </div>
     </div>

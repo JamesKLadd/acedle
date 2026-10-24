@@ -36,7 +36,7 @@ export function SandboxClient() {
         <button
           onClick={roll}
           disabled={loading}
-          className="rounded-lg bg-amber-400 px-6 py-3 text-lg font-semibold text-zinc-950 hover:bg-amber-300 disabled:opacity-60"
+          className="rounded-lg bg-amber-400 px-6 py-3 text-lg font-semibold text-accent-ink hover:bg-amber-300 disabled:opacity-60"
         >
           {loading ? "Rolling…" : result ? "Roll again" : "Roll"}
         </button>
@@ -55,13 +55,13 @@ export function SandboxClient() {
         </label>
       </div>
 
-      {error && <p className="text-red-600">{error}</p>}
+      {error && <p className="text-red-500">{error}</p>}
 
       {result && (
         <div>
           <RollReveal key={result.key} season={result.season} score={result.score} onDone={() => setRevealed(true)} />
           {revealed && (
-            <p className="mt-3 animate-reveal text-sm text-zinc-500">
+            <p className="mt-3 animate-reveal text-sm text-muted">
               That&apos;s the {fmtTopPercent(result.topPercent)} of all seasons.
             </p>
           )}

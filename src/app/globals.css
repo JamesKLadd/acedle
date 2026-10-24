@@ -1,33 +1,130 @@
 @import "tailwindcss";
 
+/* Dark mode follows data-theme on <html> (set before paint by the script in layout.tsx). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+ * Scoreboard theme. Components use these tokens (bg-surface, text-muted,
+ * bg-accent...) instead of raw palette colors, so both themes come for free.
+ * Category colors follow the court surfaces: clay, grass, hard court.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f3f5fa;
+  --surface: #ffffff;
+  --surface-2: #eaeff7;
+  --line: #d5ddeb;
+  --fg: #0d1a33;
+  --muted: #5b6b87;
+  --subtle: #8a97ad;
+  --accent: #c8e83a;
+  --accent-ink: #0d1a33;
+  --accent-text: #4a7a0c;
+  --accent-soft: #eef8c9;
+  --panel: #0d1a33;
+  --panel-fg: #eaf0fb;
+
+  --titles: #a8790a;
+  --surface-cat: #c2410c;
+  --ranking: #1d5fd1;
+  --matches: #15803d;
+  --serve: #7c3aed;
+  --profile: #475569;
+  --jackpot: #c026d3;
+
+  --common: #7b8aa3;
+  --rare: #2f80ed;
+  --epic: #8b5cf6;
+  --legendary: #c9940a;
+  --mythic: #e0459b;
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #0a1428;
+  --surface: #101d38;
+  --surface-2: #172a4d;
+  --line: #233a63;
+  --fg: #eaf0fb;
+  --muted: #93a5c6;
+  --subtle: #64779b;
+  --accent: #d4f53c;
+  --accent-ink: #0a1428;
+  --accent-text: #d4f53c;
+  --accent-soft: rgb(212 245 60 / 0.12);
+  --panel: #060d1c;
+  --panel-fg: #eaf0fb;
+
+  --titles: #f2c94c;
+  --surface-cat: #f08a5d;
+  --ranking: #6aa3ff;
+  --matches: #5fd38a;
+  --serve: #b394ff;
+  --profile: #a3b2c9;
+  --jackpot: #f07ff5;
+
+  --common: #8da0c2;
+  --rare: #5aa2ff;
+  --epic: #b08cff;
+  --legendary: #f5c542;
+  --mythic: #ff6ec7;
+
+  color-scheme: dark;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --color-panel: var(--panel);
+  --color-panel-fg: var(--panel-fg);
+
+  --color-cat-titles: var(--titles);
+  --color-cat-surface: var(--surface-cat);
+  --color-cat-ranking: var(--ranking);
+  --color-cat-matches: var(--matches);
+  --color-cat-serve: var(--serve);
+  --color-cat-profile: var(--profile);
+  --color-cat-jackpot: var(--jackpot);
+
+  --color-common: var(--common);
+  --color-rare: var(--rare);
+  --color-epic: var(--epic);
+  --color-legendary: var(--legendary);
+  --color-mythic: var(--mythic);
+
+  /* Kept for older class names. */
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-barlow);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Roll reveal: badges and the player slide in. */
+/* Scores and ranks line up as they count. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
 @theme {
   --animate-reveal: reveal-in 300ms ease-out both;
+  --animate-shine: shine 3.5s linear infinite;
+  --animate-pop: pop 380ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
 
   @keyframes reveal-in {
     from {
@@ -39,10 +136,36 @@ body {
       transform: none;
     }
   }
+
+  @keyframes shine {
+    to {
+      --shine-angle: 360deg;
+    }
+  }
+
+  @keyframes pop {
+    from {
+      transform: scale(0.92);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+}
+
+/* Animated border for legendary and mythic rolls (see RarityFrame). */
+@property --shine-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-reveal {
+  .animate-reveal,
+  .animate-shine,
+  .animate-pop {
     animation: none;
   }
 }

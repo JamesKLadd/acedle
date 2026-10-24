@@ -45,7 +45,7 @@ export function RollButton() {
   if (revealing) {
     return (
       <div>
-        <h2 className="mb-3 text-sm font-medium tracking-wide text-zinc-500 uppercase">
+        <h2 className="mb-3 text-sm font-medium tracking-wide text-muted uppercase">
           Today&apos;s roll · {fmtDay(revealing.day)}
         </h2>
         <RollReveal season={revealing.season} score={revealing.score} onDone={() => router.refresh()} />
@@ -58,11 +58,11 @@ export function RollButton() {
       <button
         onClick={roll}
         disabled={pending}
-        className="rounded-lg bg-lime-500 px-8 py-4 text-xl font-semibold text-zinc-950 hover:bg-lime-400 disabled:opacity-60"
+        className="rounded-lg bg-accent px-8 py-4 text-xl font-semibold text-accent-ink hover:brightness-105 disabled:opacity-60"
       >
         {pending ? "Rolling…" : "Roll today's season"}
       </button>
-      {error && <p className="text-red-600">{error}</p>}
+      {error && <p className="text-red-500">{error}</p>}
     </div>
   );
 }

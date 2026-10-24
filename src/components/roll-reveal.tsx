@@ -75,14 +75,14 @@ export function RollReveal({
     <section className={CARD_CLASS}>
       <div className="flex items-start justify-between gap-4">
         <p
-          className={`font-mono text-sm ${yearLanded ? "text-zinc-500 dark:text-zinc-400" : "text-zinc-300 dark:text-zinc-600"}`}
+          className={`font-mono text-sm ${yearLanded ? "text-muted" : "text-subtle/60"}`}
           aria-live="polite"
         >
           {yearLanded ? season.year : spinningYear}
           {yearLanded && season.live && ` · live season, ranked as of ${fmtYmd(season.dataAsOf)}`}
         </p>
         {!done && (
-          <button onClick={skip} className="text-xs text-zinc-500 underline underline-offset-4 hover:text-foreground">
+          <button onClick={skip} className="text-xs text-muted underline underline-offset-4 hover:text-fg">
             Skip
           </button>
         )}
@@ -94,12 +94,12 @@ export function RollReveal({
         </div>
       ) : (
         <>
-          <h2 className="text-2xl font-bold text-zinc-300 dark:text-zinc-700">Rolling…</h2>
+          <h2 className="text-2xl font-bold text-subtle/50">Rolling…</h2>
           <p className="text-sm text-transparent">.</p>
         </>
       )}
 
-      <ul className="mt-4 divide-y divide-zinc-100 dark:divide-zinc-800">
+      <ul className="mt-4 divide-y divide-line/70">
         {timeline.badges.slice(0, frame.shown).map((b) => (
           <BadgeRow key={b.id} badge={b} className="animate-reveal" />
         ))}

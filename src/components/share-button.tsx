@@ -28,7 +28,7 @@ export function ShareButton({ text, path }: { text: string; path: string }) {
   return (
     <button
       onClick={share}
-      className="rounded-lg bg-zinc-900 px-5 py-2 text-sm font-semibold text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+      className="rounded-lg bg-fg px-5 py-2 text-sm font-semibold text-bg hover:opacity-90"
     >
       {status === "copied" ? "Copied!" : status === "failed" ? "Couldn't copy" : "Share"}
     </button>

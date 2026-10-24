@@ -25,7 +25,7 @@ async function Dex() {
         <Progress label="Years" value={dex.rollsPerYear.size} total={totals.years.length} />
       </div>
 
-      <h2 className="mt-8 mb-2 text-sm font-semibold tracking-wide text-zinc-500 uppercase">Years</h2>
+      <h2 className="mt-8 mb-2 text-sm font-semibold tracking-wide text-muted uppercase">Years</h2>
       <ul className="grid grid-cols-5 gap-1.5 sm:grid-cols-8">
         {totals.years.map((y) => {
           const n = dex.rollsPerYear.get(y) ?? 0;
@@ -35,8 +35,8 @@ async function Dex() {
               title={n ? `${n} ${n === 1 ? "roll" : "rolls"}` : "Not rolled yet"}
               className={`rounded py-1.5 text-center font-mono text-sm tabular-nums ${
                 n
-                  ? "bg-lime-500 font-semibold text-zinc-950"
-                  : "bg-zinc-100 text-zinc-400 dark:bg-zinc-900 dark:text-zinc-600"
+                  ? "bg-accent font-semibold text-accent-ink"
+                  : "bg-surface-2 text-subtle"
               }`}
             >
               {y}
@@ -45,20 +45,20 @@ async function Dex() {
         })}
       </ul>
 
-      <h2 className="mt-8 mb-2 text-sm font-semibold tracking-wide text-zinc-500 uppercase">Players</h2>
+      <h2 className="mt-8 mb-2 text-sm font-semibold tracking-wide text-muted uppercase">Players</h2>
       {dex.players.length === 0 ? (
-        <p className="py-6 text-center text-zinc-500">Every player you roll is added here.</p>
+        <p className="py-6 text-center text-muted">Every player you roll is added here.</p>
       ) : (
         <ul className="flex flex-col">
           {dex.players.map((p) => (
             <li key={p.playerId} className="grid grid-cols-[1fr_auto] items-center gap-3 px-3 py-2">
               <span className="min-w-0">
                 <span className="block truncate font-medium">{p.name}</span>
-                <span className="block truncate text-xs text-zinc-500">
+                <span className="block truncate text-xs text-muted">
                   {p.country} · best finish #{p.bestRank}
                 </span>
               </span>
-              <span className="font-mono text-sm text-zinc-600 tabular-nums dark:text-zinc-400">{p.years.join(", ")}</span>
+              <span className="font-mono text-sm text-muted tabular-nums">{p.years.join(", ")}</span>
             </li>
           ))}
         </ul>

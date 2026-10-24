@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description: "How Acedle works, where its tennis data comes from, and what it stores about you.",
 };
 
-const linkClass = "font-medium text-lime-600 underline underline-offset-4 dark:text-lime-400";
+const linkClass = "font-medium text-accent-text underline decoration-2 underline-offset-4";
 
 function A({ href, children }: { href: string; children: ReactNode }) {
   return (
@@ -26,7 +26,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-10">
       <h2 className="text-xl font-semibold">{title}</h2>
-      <div className="mt-3 flex flex-col gap-3 text-zinc-700 dark:text-zinc-300">{children}</div>
+      <div className="mt-3 flex flex-col gap-3 text-fg/85">{children}</div>
     </section>
   );
 }

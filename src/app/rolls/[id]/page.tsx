@@ -11,7 +11,7 @@ import { getSharedRoll } from "@/lib/roll/shared";
 import { topPercent } from "@/lib/scoring/distribution";
 import { shareText } from "@/lib/share";
 
-const linkClass = "font-medium text-lime-600 underline underline-offset-4 dark:text-lime-400";
+const linkClass = "font-medium text-accent-text underline decoration-2 underline-offset-4";
 
 export async function generateMetadata({ params }: PageProps<"/rolls/[id]">): Promise<Metadata> {
   const shared = await getSharedRoll((await params).id);
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: PageProps<"/rolls/[id]">): Pr
 export default function RollPage({ params }: PageProps<"/rolls/[id]">) {
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-10">
-      <Suspense fallback={<div className="h-96 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-900" />}>
+      <Suspense fallback={<div className="h-96 animate-pulse rounded-xl bg-surface-2" />}>
         <RollDetail params={params} />
       </Suspense>
     </main>
@@ -43,15 +43,15 @@ async function RollDetail({ params }: { params: Promise<{ id: string }> }) {
   return (
     <>
       {isOwner ? (
-        <Link href="/profile" className="text-sm text-zinc-500 hover:text-foreground">
+        <Link href="/profile" className="text-sm text-muted hover:text-fg">
           ← Roll history
         </Link>
       ) : (
-        <p className="text-sm text-zinc-500">
-          Rolled by <strong className="text-foreground">{handle ?? "a guest"}</strong>
+        <p className="text-sm text-muted">
+          Rolled by <strong className="text-fg">{handle ?? "a guest"}</strong>
         </p>
       )}
-      <h1 className="mt-4 mb-3 text-sm font-medium tracking-wide text-zinc-500 uppercase">
+      <h1 className="mt-4 mb-3 text-sm font-medium tracking-wide text-muted uppercase">
         {fmtDay(roll.day)}, {roll.day.slice(0, 4)}
       </h1>
       <RollCard season={roll.season} score={roll.score} />

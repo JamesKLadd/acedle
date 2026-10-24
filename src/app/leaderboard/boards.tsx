@@ -7,7 +7,7 @@ import { fmtDate, fmtDay, fmtScore, fmtShortDay } from "@/lib/format";
 import { getAllTimeBoard, getRollBoard, splitBoard, type RollBoardEntry } from "@/lib/leaderboard";
 import { addDays, utcDay, weekOf } from "@/lib/roll/daily";
 
-const linkClass = "font-medium text-lime-600 underline underline-offset-4 dark:text-lime-400";
+const linkClass = "font-medium text-accent-text underline decoration-2 underline-offset-4";
 
 export async function DailyBoard() {
   const viewer = await getViewer();
@@ -99,7 +99,7 @@ function BoardHeading({ title, note }: { title: string; note: string }) {
   return (
     <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4">
       <h2 className="text-lg font-semibold">{title}</h2>
-      <p className="text-xs text-zinc-500">{note}</p>
+      <p className="text-xs text-muted">{note}</p>
     </div>
   );
 }
@@ -124,7 +124,7 @@ function ViewerNote({
     text =
       mine !== undefined ? (
         <>
-          {best ? "Your best is" : "You're"} <strong className="text-foreground">#{mine}</strong> of {entries}.
+          {best ? "Your best is" : "You're"} <strong className="text-fg">#{mine}</strong> of {entries}.
         </>
       ) : (
         <>
@@ -154,9 +154,9 @@ function ViewerNote({
       </>
     );
   }
-  return <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">{text}</p>;
+  return <p className="mb-4 text-sm text-muted">{text}</p>;
 }
 
 function Empty({ children }: { children: ReactNode }) {
-  return <p className="py-10 text-center text-zinc-500">{children}</p>;
+  return <p className="py-10 text-center text-muted">{children}</p>;
 }
