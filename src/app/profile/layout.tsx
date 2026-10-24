@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { TabNav } from "@/components/tab-nav";
+import { TabLinks, TabNav } from "@/components/tab-nav";
 
 import { ProfileHeader, ProfileHeaderSkeleton } from "./header";
 
@@ -19,7 +19,9 @@ export default function ProfileLayout({ children }: LayoutProps<"/profile">) {
       <Suspense fallback={<ProfileHeaderSkeleton />}>
         <ProfileHeader />
       </Suspense>
-      <TabNav tabs={TABS} />
+      <Suspense fallback={<TabLinks tabs={TABS} pathname={null} />}>
+        <TabNav tabs={TABS} />
+      </Suspense>
       {children}
     </main>
   );

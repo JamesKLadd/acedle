@@ -6,7 +6,7 @@ import { useEffect, useState, useTransition } from "react";
 
 import { RollReveal } from "@/components/roll-reveal";
 import { buttonClass, Eyebrow } from "@/components/ui";
-import { fmtDay } from "@/lib/format";
+import { fmtShortDay } from "@/lib/format";
 import { rememberRollDay } from "@/lib/prefs";
 import { createClient } from "@/lib/supabase/client";
 
@@ -67,7 +67,7 @@ export function RollButton() {
   if (revealing) {
     return (
       <div>
-        <Eyebrow className="mb-3">Today&apos;s roll · {fmtDay(revealing.roll.day)}</Eyebrow>
+        <Eyebrow className="mb-3">Today&apos;s roll · {fmtShortDay(revealing.roll.day)}</Eyebrow>
         <RollReveal
           season={revealing.roll.season}
           score={revealing.roll.score}

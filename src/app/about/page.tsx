@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { Card, linkClass, PageTitle, SectionTitle } from "@/components/ui";
 import { POOL_SIZE } from "@/lib/data/years";
 import { fmtYmd } from "@/lib/format";
 
@@ -12,7 +13,6 @@ export const metadata: Metadata = {
   description: "How Acedle works, where its tennis data comes from, and what it stores about you.",
 };
 
-const linkClass = "font-medium text-accent-text underline decoration-2 underline-offset-4";
 
 function A({ href, children }: { href: string; children: ReactNode }) {
   return (
@@ -24,10 +24,10 @@ function A({ href, children }: { href: string; children: ReactNode }) {
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mt-10">
-      <h2 className="text-xl font-semibold">{title}</h2>
+    <Card className="mt-6">
+      <SectionTitle>{title}</SectionTitle>
       <div className="mt-3 flex flex-col gap-3 text-fg/85">{children}</div>
-    </section>
+    </Card>
   );
 }
 
@@ -36,7 +36,7 @@ export default function AboutPage() {
   const estimated = "rankingsEstimated" in meta && meta.rankingsEstimated === true;
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-10">
-      <h1 className="text-3xl font-bold">About Acedle</h1>
+      <PageTitle subtitle="How it works, where the data comes from, and what's stored.">About</PageTitle>
 
       <Section title="How it works">
         <p>

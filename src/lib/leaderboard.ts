@@ -31,3 +31,16 @@ export async function getAllTimeBoard(db: SupabaseClient<Database>): Promise<All
 export function splitBoard<T extends { is_viewer: boolean }>(entries: readonly T[]) {
   return { top: entries.slice(0, BOARD_SIZE), below: entries.slice(BOARD_SIZE) };
 }
+
+/** The first day Acedle had daily rolls; boards don't go further back. */
+export const FIRST_DAY = "2026-10-24";
+
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** A ?day= value, clamped to [FIRST_DAY, today]; today when missing or malformed. */
+export function boardDay(param: unknown, today: string): string {
+  if (typeof param !== "string" || !ISO_DAY.test(param) || Number.isNaN(Date.parse(param))) return today;
+  if (param > today) return today;
+  if (param < FIRST_DAY) return FIRST_DAY;
+  return param;
+}

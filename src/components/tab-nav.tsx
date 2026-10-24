@@ -3,11 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-/** Row of links styled as tabs; the one matching the current path is active. */
+/** Segmented control of links; the one matching the current path is active. Render inside <Suspense>. */
 export function TabNav({ tabs }: { tabs: readonly { href: string; label: string }[] }) {
-  const pathname = usePathname();
+  return <TabLinks tabs={tabs} pathname={usePathname()} />;
+}
+
+/** The tabs themselves; with no pathname (e.g. a Suspense fallback) none is active. */
+export function TabLinks({ tabs, pathname }: { tabs: readonly { href: string; label: string }[]; pathname: string | null }) {
   return (
-    <nav className="mt-4 mb-6 flex gap-1 border-b border-line text-sm">
+    <nav className="my-6 flex gap-1 rounded-xl border border-line bg-surface p-1 text-sm">
       {tabs.map((t) => {
         const active = pathname === t.href;
         return (
@@ -15,10 +19,8 @@ export function TabNav({ tabs }: { tabs: readonly { href: string; label: string 
             key={t.href}
             href={t.href}
             aria-current={active ? "page" : undefined}
-            className={`-mb-px border-b-2 px-3 py-2 font-medium ${
-              active
-                ? "border-accent text-fg"
-                : "border-transparent text-muted hover:text-fg"
+            className={`flex-1 rounded-lg px-3 py-2 text-center font-semibold transition ${
+              active ? "bg-accent text-accent-ink shadow-sm" : "text-muted hover:bg-surface-2 hover:text-fg"
             }`}
           >
             {t.label}

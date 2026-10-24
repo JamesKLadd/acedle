@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { PROVIDER_LABELS, type OAuthProvider } from "@/lib/auth/providers";
+import { buttonClass } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 
 /** OAuth sign-in. The callback moves a guest's rolls into a new account. */
@@ -34,7 +35,7 @@ export function SignInButtons({ providers }: { providers: readonly OAuthProvider
             key={p}
             onClick={() => signIn(p)}
             disabled={pending !== null}
-            className="rounded-lg border border-line px-4 py-2 text-sm font-medium hover:bg-surface-2 disabled:opacity-60"
+            className={buttonClass({ variant: "secondary" })}
           >
             {pending === p ? "Redirecting…" : `Sign in with ${PROVIDER_LABELS[p]}`}
           </button>

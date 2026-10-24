@@ -35,7 +35,7 @@ export const getMyProfile = cache(async () => {
   if (!userId || !isAccount) return null;
   const { data, error } = await supabase
     .from("profiles")
-    .select("handle, created_at, total_score, roll_count")
+    .select("handle, avatar_url, created_at, total_score, roll_count")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw new Error(`Couldn't load your profile: ${error.message}`);

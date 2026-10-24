@@ -7,10 +7,10 @@ import { DailyBoard } from "./boards";
 
 export const metadata: Metadata = { title: "Today's leaderboard · Acedle" };
 
-export default function DailyLeaderboardPage() {
+export default function DailyLeaderboardPage({ searchParams }: PageProps<"/leaderboard">) {
   return (
     <Suspense fallback={<BoardSkeleton />}>
-      <DailyBoard />
+      <DailyBoard searchParams={searchParams} />
     </Suspense>
   );
 }

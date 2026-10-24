@@ -5,13 +5,12 @@ import { Suspense } from "react";
 
 import { RollCard } from "@/components/roll-card";
 import { ShareButton } from "@/components/share-button";
+import { buttonClass } from "@/components/ui";
 import { getViewer } from "@/lib/auth/viewer";
 import { fmtDay, fmtScore } from "@/lib/format";
 import { getSharedRoll } from "@/lib/roll/shared";
 import { topPercent } from "@/lib/scoring/distribution";
 import { shareText } from "@/lib/share";
-
-const linkClass = "font-medium text-accent-text underline decoration-2 underline-offset-4";
 
 export async function generateMetadata({ params }: PageProps<"/rolls/[id]">): Promise<Metadata> {
   const shared = await getSharedRoll((await params).id);
@@ -51,7 +50,7 @@ async function RollDetail({ params }: { params: Promise<{ id: string }> }) {
           Rolled by <strong className="text-fg">{handle ?? "a guest"}</strong>
         </p>
       )}
-      <h1 className="mt-4 mb-3 text-sm font-medium tracking-wide text-muted uppercase">
+      <h1 className="mt-4 mb-3 text-xs font-semibold tracking-[0.14em] text-muted uppercase">
         {fmtDay(roll.day)}, {roll.day.slice(0, 4)}
       </h1>
       <RollCard season={roll.season} score={roll.score} topPercent={topPercent(roll.score.total)} />
@@ -62,8 +61,8 @@ async function RollDetail({ params }: { params: Promise<{ id: string }> }) {
             path={`/rolls/${roll.id}`}
           />
         ) : (
-          <Link href="/" className={linkClass}>
-            Roll your own season →
+          <Link href="/" className={buttonClass()}>
+            Roll your own season
           </Link>
         )}
       </div>

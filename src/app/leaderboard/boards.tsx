@@ -1,41 +1,117 @@
+import { CircleUser, Dices, LogIn } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { BoardGap, BoardList, BoardRow } from "@/components/board";
+import { Board, PeriodNav, type BoardEntry } from "@/components/board";
+import { buttonClass } from "@/components/ui";
 import { getViewer, type Viewer } from "@/lib/auth/viewer";
+import { flag } from "@/lib/flags";
 import { fmtDate, fmtDay, fmtScore, fmtShortDay } from "@/lib/format";
-import { getAllTimeBoard, getRollBoard, splitBoard, type RollBoardEntry } from "@/lib/leaderboard";
+import {
+  boardDay,
+  FIRST_DAY,
+  getAllTimeBoard,
+  getRollBoard,
+  splitBoard,
+  type AllTimeEntry,
+  type RollBoardEntry,
+} from "@/lib/leaderboard";
 import { addDays, utcDay, weekOf } from "@/lib/roll/daily";
 
-const linkClass = "font-medium text-accent-text underline decoration-2 underline-offset-4";
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-export async function DailyBoard() {
-  const viewer = await getViewer();
-  const day = utcDay();
+const rollEntry = (showDay: boolean) => (e: RollBoardEntry, i: number): BoardEntry => ({
+  key: i,
+  rank: e.rank,
+  name: e.handle,
+  avatarUrl: e.avatar_url,
+  detail: `${showDay ? `${fmtShortDay(e.day)} · ` : ""}${e.year} ${e.player_name} · #${e.final_rank}`,
+  value: fmtScore(e.score),
+  isViewer: e.is_viewer,
+});
+
+const allTimeEntry = (e: AllTimeEntry, i: number): BoardEntry => ({
+  key: i,
+  rank: e.rank,
+  name: e.handle,
+  avatarUrl: e.avatar_url,
+  detail: `${e.roll_count} ${e.roll_count === 1 ? "roll" : "rolls"} · ${fmtScore(e.total_score / e.roll_count)} avg`,
+  value: fmtScore(e.total_score),
+  isViewer: e.is_viewer,
+});
+
+/** Board rows with the player's flag in front of the season. */
+function withFlags(entries: RollBoardEntry[], showDay: boolean, countries: Map<number, string>) {
+  return entries.map((e, i) => {
+    const entry = rollEntry(showDay)(e, i);
+    const c = countries.get(e.player_id);
+    return c ? { ...entry, detail: `${flag(c)} ${entry.detail}` } : entry;
+  });
+}
+
+async function countriesOf(entries: RollBoardEntry[], viewer: Viewer) {
+  if (entries.length === 0) return new Map<number, string>();
+  const ids = [...new Set(entries.map((e) => e.player_id))];
+  const { data } = await viewer.supabase.from("players").select("id, country").in("id", ids);
+  return new Map((data ?? []).map((p) => [p.id, p.country]));
+}
+
+export async function DailyBoard({ searchParams }: { searchParams: SearchParams }) {
+  const [viewer, params] = await Promise.all([getViewer(), searchParams]);
+  const today = utcDay();
+  const day = boardDay(params.day, today);
   const entries = await getRollBoard(viewer.supabase, day, day);
+  const { top, below } = splitBoard(entries);
+  const countries = await countriesOf(entries, viewer);
+  const isToday = day === today;
   return (
     <>
-      <BoardHeading title={fmtDay(day)} note="Resets at midnight UTC" />
+      <PeriodNav
+        label={isToday ? `Today · ${fmtShortDay(day)}` : fmtDay(day)}
+        prevHref={day > FIRST_DAY ? `/leaderboard?day=${addDays(day, -1)}` : null}
+        nextHref={isToday ? null : `/leaderboard?day=${addDays(day, 1)}`}
+        currentHref="/leaderboard"
+        isCurrent={isToday}
+      />
       <ViewerNote viewer={viewer} mine={entries.find((e) => e.is_viewer)?.rank} entries={entries[0]?.entries}>
-        You haven&apos;t rolled today.
+        {isToday ? "You haven't rolled today." : "You didn't roll that day."}
       </ViewerNote>
-      <RollEntries entries={entries} showDay={false} empty="No one has rolled today yet." />
+      <Board
+        top={withFlags(top, false, countries)}
+        below={withFlags(below, false, countries).map((e, i) => ({ ...e, key: `b${i}` }))}
+        empty={isToday ? "No one has rolled today yet. Be the first!" : "No rolls that day."}
+      />
     </>
   );
 }
 
-export async function WeeklyBoard() {
-  const viewer = await getViewer();
-  const monday = weekOf(utcDay());
+export async function WeeklyBoard({ searchParams }: { searchParams: SearchParams }) {
+  const [viewer, params] = await Promise.all([getViewer(), searchParams]);
+  const thisWeek = weekOf(utcDay());
+  const monday = weekOf(boardDay(params.week, utcDay()));
   const sunday = addDays(monday, 6);
   const entries = await getRollBoard(viewer.supabase, monday, sunday);
+  const { top, below } = splitBoard(entries);
+  const countries = await countriesOf(entries, viewer);
+  const isCurrent = monday === thisWeek;
   return (
     <>
-      <BoardHeading title={`${fmtDate(monday)} – ${fmtDate(sunday)}`} note="Every roll counts, so you can appear up to 7 times" />
+      <PeriodNav
+        label={`${fmtDate(monday).replace(/, \d{4}$/, "")} – ${fmtDate(sunday)}`}
+        prevHref={addDays(monday, 6) > FIRST_DAY ? `/leaderboard/weekly?week=${addDays(monday, -7)}` : null}
+        nextHref={isCurrent ? null : `/leaderboard/weekly?week=${addDays(monday, 7)}`}
+        currentHref="/leaderboard/weekly"
+        isCurrent={isCurrent}
+      />
       <ViewerNote viewer={viewer} mine={entries.find((e) => e.is_viewer)?.rank} entries={entries[0]?.entries} best>
-        You haven&apos;t rolled this week.
+        {isCurrent ? "You haven't rolled this week." : "You didn't roll that week."}
       </ViewerNote>
-      <RollEntries entries={entries} showDay empty="No one has rolled this week yet." />
+      <Board
+        top={withFlags(top, true, countries)}
+        below={withFlags(below, true, countries).map((e, i) => ({ ...e, key: `b${i}` }))}
+        empty="No rolls that week yet."
+      />
+      <p className="mt-4 text-center text-xs text-subtle">Every roll counts, so one player can appear up to 7 times.</p>
     </>
   );
 }
@@ -44,63 +120,21 @@ export async function AllTimeBoard() {
   const viewer = await getViewer();
   const entries = await getAllTimeBoard(viewer.supabase);
   const { top, below } = splitBoard(entries);
-  const row = (e: (typeof entries)[number], i: number) => (
-    <BoardRow
-      key={i}
-      rank={`#${e.rank}`}
-      name={e.handle}
-      detail={`${e.roll_count} ${e.roll_count === 1 ? "roll" : "rolls"} · ${fmtScore(e.total_score / e.roll_count)} average`}
-      value={fmtScore(e.total_score)}
-      highlight={e.is_viewer}
-    />
-  );
   return (
     <>
-      <BoardHeading title="All-time points" note="Total of every daily roll" />
+      <div className="mb-4 text-center">
+        <p className="font-display text-xl font-bold tracking-wide uppercase">All-time points</p>
+        <p className="text-xs text-muted">The total of every daily roll</p>
+      </div>
       <ViewerNote viewer={viewer} mine={entries.find((e) => e.is_viewer)?.rank} entries={entries[0]?.entries}>
         Roll to get on the board.
       </ViewerNote>
-      {top.length === 0 ? (
-        <Empty>No one is on the board yet.</Empty>
-      ) : (
-        <BoardList>
-          {top.map(row)}
-          {below.length > 0 && <BoardGap />}
-          {below.map((e, i) => row(e, top.length + i))}
-        </BoardList>
-      )}
+      <Board
+        top={top.map(allTimeEntry)}
+        below={below.map((e, i) => ({ ...allTimeEntry(e, i), key: `b${i}` }))}
+        empty="No one is on the board yet."
+      />
     </>
-  );
-}
-
-function RollEntries({ entries, showDay, empty }: { entries: RollBoardEntry[]; showDay: boolean; empty: string }) {
-  const { top, below } = splitBoard(entries);
-  if (top.length === 0) return <Empty>{empty}</Empty>;
-  const row = (e: RollBoardEntry, i: number) => (
-    <BoardRow
-      key={i}
-      rank={`#${e.rank}`}
-      name={e.handle}
-      detail={`${showDay ? `${fmtShortDay(e.day)} · ` : ""}${e.year} ${e.player_name} · #${e.final_rank}`}
-      value={fmtScore(e.score)}
-      highlight={e.is_viewer}
-    />
-  );
-  return (
-    <BoardList>
-      {top.map(row)}
-      {below.length > 0 && <BoardGap />}
-      {below.map((e, i) => row(e, top.length + i))}
-    </BoardList>
-  );
-}
-
-function BoardHeading({ title, note }: { title: string; note: string }) {
-  return (
-    <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4">
-      <h2 className="text-lg font-semibold">{title}</h2>
-      <p className="text-xs text-muted">{note}</p>
-    </div>
   );
 }
 
@@ -119,44 +153,38 @@ function ViewerNote({
   best?: boolean;
   children: ReactNode;
 }) {
+  let icon = CircleUser;
   let text: ReactNode;
-  if (viewer.isAccount) {
-    text =
-      mine !== undefined ? (
-        <>
-          {best ? "Your best is" : "You're"} <strong className="text-fg">#{mine}</strong> of {entries}.
-        </>
-      ) : (
-        <>
-          {missing}{" "}
-          <Link href="/" className={linkClass}>
-            Roll now
-          </Link>
-        </>
-      );
-  } else if (viewer.isGuest) {
+  let action: ReactNode = null;
+  if (viewer.isAccount && mine !== undefined) {
     text = (
       <>
-        Guest rolls don&apos;t appear on leaderboards.{" "}
-        <Link href="/" className={linkClass}>
-          Sign in
-        </Link>{" "}
-        to join.
+        {best ? "Your best is" : "You're"} <strong className="text-fg">#{mine}</strong> of {entries}.
       </>
+    );
+  } else if (viewer.isAccount) {
+    icon = Dices;
+    text = missing;
+    action = (
+      <Link href="/" className={buttonClass({ size: "sm" })}>
+        Roll now
+      </Link>
     );
   } else {
-    text = (
-      <>
-        <Link href="/" className={linkClass}>
-          Roll and sign in
-        </Link>{" "}
-        to join the leaderboards.
-      </>
+    icon = LogIn;
+    text = viewer.isGuest ? "Guest rolls don't appear on leaderboards." : "Roll and sign in to join the leaderboards.";
+    action = (
+      <Link href="/" className={buttonClass({ size: "sm", variant: "secondary" })}>
+        {viewer.isGuest ? "Sign in" : "Play"}
+      </Link>
     );
   }
-  return <p className="mb-4 text-sm text-muted">{text}</p>;
-}
-
-function Empty({ children }: { children: ReactNode }) {
-  return <p className="py-10 text-center text-muted">{children}</p>;
+  const Icon = icon;
+  return (
+    <div className="mb-4 flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-2.5 text-sm text-muted">
+      <Icon className="size-4 shrink-0 text-accent-text" aria-hidden />
+      <span className="flex-1">{text}</span>
+      {action}
+    </div>
+  );
 }

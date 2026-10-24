@@ -1,10 +1,15 @@
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
 import { BoardSkeleton } from "@/components/board";
+import { RarityChip } from "@/components/roll-card";
+import { buttonClass } from "@/components/ui";
+import { flag } from "@/lib/flags";
 import { fmtDate, fmtScore } from "@/lib/format";
 import { summarizeRolls } from "@/lib/profile/collection";
 import { getMyRolls } from "@/lib/profile/queries";
+import { topPercent } from "@/lib/scoring/distribution";
 
 export default function HistoryPage() {
   return (
@@ -18,37 +23,46 @@ async function History() {
   const rolls = await getMyRolls();
   if (rolls.length === 0) {
     return (
-      <p className="py-10 text-center text-muted">
-        No rolls yet.{" "}
-        <Link href="/" className="font-medium text-accent-text underline decoration-2 underline-offset-4">
+      <div className="rounded-2xl border border-dashed border-line py-12 text-center">
+        <p className="text-muted">No rolls yet.</p>
+        <Link href="/" className={`${buttonClass()} mt-4`}>
           Roll today&apos;s season
         </Link>
-      </p>
+      </div>
     );
   }
   const best = summarizeRolls(rolls).best;
   return (
-    <ol className="flex flex-col">
+    <ol className="flex flex-col gap-2">
       {rolls.map((r) => (
         <li key={r.id}>
           <Link
             href={`/rolls/${r.id}`}
-            className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg px-3 py-2 hover:bg-surface-2"
+            className={`group grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-xl border bg-surface px-4 py-3 transition hover:border-accent/60 ${
+              r.id === best?.id && rolls.length > 1 ? "border-legendary/50" : "border-line"
+            }`}
           >
             <span className="min-w-0">
-              <span className="block truncate font-medium">
-                {r.year} {r.playerName}
-                {r.id === best?.id && rolls.length > 1 && (
-                  <span className="ml-2 rounded bg-accent-soft px-1.5 py-0.5 text-xs text-accent-text">
-                    Best
-                  </span>
-                )}
+              <span className="flex items-center gap-2">
+                <span className="font-display text-lg font-bold text-accent-text">{r.year}</span>
+                <span className="truncate font-semibold">{r.playerName}</span>
               </span>
-              <span className="block truncate text-xs text-muted">
-                {fmtDate(r.day)} · #{r.finalRank} · {r.country}
+              <span className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted">
+                <span>{fmtDate(r.day)}</span>
+                <span aria-hidden>·</span>
+                <span>
+                  #{r.finalRank} · {flag(r.country)} {r.country}
+                </span>
+                {r.id === best?.id && rolls.length > 1 && <span className="font-semibold text-legendary">Best roll</span>}
               </span>
             </span>
-            <span className="font-mono font-semibold tabular-nums">{fmtScore(r.score)}</span>
+            <span className="flex flex-col items-end gap-1">
+              <span className="tabular font-mono font-semibold">{fmtScore(r.score)}</span>
+              <span className="hidden sm:block">
+                <RarityChip topPercent={topPercent(r.score)} />
+              </span>
+            </span>
+            <ChevronRight className="size-4 text-subtle transition group-hover:translate-x-0.5" aria-hidden />
           </Link>
         </li>
       ))}

@@ -63,11 +63,11 @@ export function Chip({ children, className = "" }: { children: ReactNode; classN
 export function Stat({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: ReactNode }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-line bg-surface px-3 py-3">
-      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent-text">
+      <span className="hidden size-9 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent-text min-[480px]:grid">
         <Icon className="size-4.5" aria-hidden />
       </span>
       <div className="min-w-0">
-        <dt className="truncate text-[11px] font-semibold tracking-wider text-muted uppercase">{label}</dt>
+        <dt className="text-[11px] leading-tight font-semibold tracking-wider text-muted uppercase">{label}</dt>
         <dd className="tabular truncate font-mono text-lg font-semibold">{value}</dd>
       </div>
     </div>
