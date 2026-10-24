@@ -1,4 +1,5 @@
 import type { BadgeDef } from "../types";
+import { pts } from "./helpers";
 
 export const profileBadges: BadgeDef[] = [
   {
@@ -6,21 +7,21 @@ export const profileBadges: BadgeDef[] = [
     name: "Teen Phenom",
     category: "profile",
     description: "Under 20 at the end of the season.",
-    evaluate: (s) => (s.age !== null && s.age < 20 ? { points: 80, detail: `Age ${s.age}` } : null),
+    evaluate: (s) => (s.age !== null && s.age < 20 ? { points: pts(80), detail: `Age ${s.age}` } : null),
   },
   {
     id: "veteran",
     name: "Wily Veteran",
     category: "profile",
     description: "33 or older at the end of the season.",
-    evaluate: (s) => (s.age !== null && s.age >= 33 ? { points: 60, detail: `Age ${s.age}` } : null),
+    evaluate: (s) => (s.age !== null && s.age >= 33 ? { points: pts(60), detail: `Age ${s.age}` } : null),
   },
   {
     id: "lefty",
     name: "Lefty",
     category: "profile",
     description: "Plays left-handed.",
-    evaluate: (s) => (s.hand === "L" ? { points: 10, detail: "Left-handed" } : null),
+    evaluate: (s) => (s.hand === "L" ? { points: pts(10), detail: "Left-handed" } : null),
   },
   {
     id: "skyscraper",
@@ -28,6 +29,6 @@ export const profileBadges: BadgeDef[] = [
     category: "profile",
     description: "198 cm (6'6\") or taller.",
     evaluate: (s) =>
-      s.heightCm !== null && s.heightCm >= 198 ? { points: 15, detail: `${s.heightCm} cm` } : null,
+      s.heightCm !== null && s.heightCm >= 198 ? { points: pts(15), detail: `${s.heightCm} cm` } : null,
   },
 ];

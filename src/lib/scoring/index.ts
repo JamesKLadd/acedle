@@ -16,7 +16,8 @@ export type * from "./types";
  */
 export const SCORING_VERSION = 1;
 
-export const MULTIPLIER_CAP = 10;
+/** Safety net only: the best real season reaches roughly ×190. */
+export const MULTIPLIER_CAP = 1000;
 
 /** All badges, in the order they are revealed. */
 export const BADGES: readonly BadgeDef[] = [

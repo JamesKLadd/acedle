@@ -39,11 +39,18 @@ describe("scoreSeason", () => {
     expect(ids(s)).toEqual(
       expect.arrayContaining(["slam_champion", "masters_champion", "tour_finals_champion", "year_end_no1", "triple_crown", "big_title_sweep"]),
     );
-    expect(badge(s, "slam_champion")?.points).toBe(1200);
+    expect(badge(s, "slam_champion")?.multiplier).toBeCloseTo(1.4 ** 3);
     expect(badge(s, "titlist")?.count).toBe(11);
-    // ×2 (No. 1) × 2 (Triple Crown) × 1.5 (Big Title Sweep)
-    expect(r.multiplier).toBe(6);
-    expect(r.total).toBe(Math.round(r.base * 6));
+    const product = r.badges.reduce((m, b) => m * (b.multiplier ?? 1), 1);
+    expect(r.multiplier).toBeCloseTo(product);
+    expect(r.total).toBe(Math.round(r.base * r.multiplier));
+    // The very best seasons land around 100 million.
+    expect(r.total).toBeGreaterThan(50_000_000);
+    expect(r.total).toBeLessThan(200_000_000);
+  });
+
+  it("Djokovic 2011 is Unstoppable", () => {
+    expect(badge(season(2011, "Novak Djokovic"), "unstoppable")?.multiplier).toBe(2);
   });
 
   it("Nadal 2010 earns the Channel Slam", () => {
@@ -70,8 +77,8 @@ describe("scoreSeason", () => {
 
   it("caps the multiplier", () => {
     const huge: BadgeDef[] = [
-      { id: "a", name: "A", category: "jackpot", description: "", evaluate: () => ({ multiplier: 5, detail: "" }) },
-      { id: "b", name: "B", category: "jackpot", description: "", evaluate: () => ({ multiplier: 5, detail: "" }) },
+      { id: "a", name: "A", category: "jackpot", description: "", evaluate: () => ({ multiplier: 50, detail: "" }) },
+      { id: "b", name: "B", category: "jackpot", description: "", evaluate: () => ({ multiplier: 50, detail: "" }) },
       { id: "c", name: "C", category: "titles", description: "", evaluate: () => ({ points: 10, detail: "" }) },
     ];
     const r = scoreSeason(season(2015, "Novak Djokovic"), huge);

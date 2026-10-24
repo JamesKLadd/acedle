@@ -45,15 +45,15 @@ out(
 );
 
 const buckets: Array<[number, number]> = [
-  [0, 100],
-  [100, 250],
-  [250, 500],
-  [500, 1000],
-  [1000, 2500],
-  [2500, 5000],
-  [5000, 10000],
-  [10000, 25000],
-  [25000, Infinity],
+  [0, 10_000],
+  [10_000, 25_000],
+  [25_000, 50_000],
+  [50_000, 100_000],
+  [100_000, 250_000],
+  [250_000, 1_000_000],
+  [1_000_000, 5_000_000],
+  [5_000_000, 25_000_000],
+  [25_000_000, Infinity],
 ];
 out("| score | share of rolls | about 1 in |", "|---|---|---|");
 for (const [lo, hi] of buckets) {
@@ -80,7 +80,7 @@ for (const [lo, hi] of rankBands) {
 
 const byTotal = [...scored].sort((a, b) => b.result.total - a.result.total);
 const row = (s: Scored) =>
-  `| ${label(s)} | ${fmt(s.result.base)} | ×${s.result.multiplier} | **${fmt(s.result.total)}** | ${s.result.badges.length} |`;
+  `| ${label(s)} | ${fmt(s.result.base)} | ×${s.result.multiplier.toFixed(1)} | **${fmt(s.result.total)}** | ${s.result.badges.length} |`;
 out("", "## Top 25 seasons", "", "| season | base | mult | total | badges |", "|---|---|---|---|---|");
 byTotal.slice(0, 25).forEach((s) => out(row(s)));
 out("", "## Bottom 10 seasons", "", "| season | base | mult | total | badges |", "|---|---|---|---|---|");
@@ -103,7 +103,7 @@ for (const def of BADGES) {
     continue;
   }
   const isMult = hits[0].multiplier !== null;
-  const avg = isMult ? `×${hits[0].multiplier}` : fmt(mean(hits.map((h) => h.points)));
+  const avg = isMult ? `×${mean(hits.map((h) => h.multiplier!)).toFixed(2)}` : fmt(mean(hits.map((h) => h.points)));
   const share = isMult ? "—" : pctOf(hits.reduce((a, h) => a + h.points, 0), allBase);
   out(`| ${def.name} | ${pctOf(hits.length, n)} | ${fmt(n / hits.length)} | ${avg} | ${share} |`);
 }
