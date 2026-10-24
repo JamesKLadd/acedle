@@ -39,3 +39,21 @@ export function rollSeason(
   const index = k === 0 ? Math.floor(rng() * pool.length) : pickIndex(pool.map((s) => s.ranking.final ** -k), rng);
   return pool[index];
 }
+
+/**
+ * Other players from the same season, for the reveal's name reel to flicker
+ * through before landing on the real one.
+ */
+export function decoyNames(
+  pools: ReadonlyMap<number, readonly PlayerSeason[]>,
+  season: PlayerSeason,
+  count = 12,
+  rng: Rng = Math.random,
+): string[] {
+  const others = (pools.get(season.year) ?? []).filter((s) => s.playerId !== season.playerId).map((s) => s.name);
+  for (let i = others.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [others[i], others[j]] = [others[j], others[i]];
+  }
+  return others.slice(0, count);
+}

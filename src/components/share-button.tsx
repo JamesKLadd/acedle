@@ -1,6 +1,9 @@
 "use client";
 
+import { Check, Share2 } from "lucide-react";
 import { useState } from "react";
+
+import { buttonClass } from "./ui";
 
 /**
  * Shares a roll: the system share sheet on touch devices, otherwise copies
@@ -26,10 +29,8 @@ export function ShareButton({ text, path }: { text: string; path: string }) {
   }
 
   return (
-    <button
-      onClick={share}
-      className="rounded-lg bg-fg px-5 py-2 text-sm font-semibold text-bg hover:opacity-90"
-    >
+    <button onClick={share} className={buttonClass()}>
+      {status === "copied" ? <Check className="size-4" aria-hidden /> : <Share2 className="size-4" aria-hidden />}
       {status === "copied" ? "Copied!" : status === "failed" ? "Couldn't copy" : "Share"}
     </button>
   );

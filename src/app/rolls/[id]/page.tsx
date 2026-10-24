@@ -54,7 +54,7 @@ async function RollDetail({ params }: { params: Promise<{ id: string }> }) {
       <h1 className="mt-4 mb-3 text-sm font-medium tracking-wide text-muted uppercase">
         {fmtDay(roll.day)}, {roll.day.slice(0, 4)}
       </h1>
-      <RollCard season={roll.season} score={roll.score} />
+      <RollCard season={roll.season} score={roll.score} topPercent={topPercent(roll.score.total)} />
       <div className="mt-4 flex flex-wrap items-center gap-4">
         {isOwner ? (
           <ShareButton

@@ -5,7 +5,7 @@
 
 import { findSeason, loadSeasons } from "@/lib/data/seasons";
 import type { PlayerSeason } from "@/lib/data/types";
-import { rollSeason } from "@/lib/roll";
+import { decoyNames, rollSeason } from "@/lib/roll";
 import { scoreSeason, type ScoreResult } from "@/lib/scoring";
 import { topPercent } from "@/lib/scoring/distribution";
 
@@ -14,6 +14,8 @@ export interface SandboxRollResponse {
   score: ScoreResult;
   /** Share of all seasons scoring at least this much. */
   topPercent: number;
+  /** Other players from the season, for the reveal's name reel. */
+  decoys: string[];
 }
 
 export async function GET(request: Request) {
@@ -26,5 +28,10 @@ export async function GET(request: Request) {
   if (!season) return Response.json({ error: "Season not found" }, { status: 404 });
 
   const score = scoreSeason(season);
-  return Response.json({ season, score, topPercent: topPercent(score.total) } satisfies SandboxRollResponse);
+  return Response.json({
+    season,
+    score,
+    topPercent: topPercent(score.total),
+    decoys: decoyNames(loadSeasons(), season),
+  } satisfies SandboxRollResponse);
 }

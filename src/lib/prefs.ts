@@ -8,6 +8,7 @@ import { THEME_KEY } from "./theme-script";
 export type Theme = "system" | "light" | "dark";
 
 const SOUND_KEY = "acedle:sound";
+const LAST_ROLL_KEY = "acedle:lastRollDay";
 
 const listeners = new Set<() => void>();
 
@@ -66,4 +67,23 @@ export function useSound(): [boolean, (on: boolean) => void] {
   const on = useSyncExternalStore(subscribe, soundEnabled, () => false);
   const set = useCallback((next: boolean) => write(SOUND_KEY, next ? "on" : null), []);
   return [on, set];
+}
+
+/** The UTC day this browser last saw its daily roll (drives the header's "Roll ready" pill). */
+export function useLastRollDay(): string | null {
+  return useSyncExternalStore(subscribe, () => read(LAST_ROLL_KEY), () => null);
+}
+
+export function rememberRollDay(day: string) {
+  if (read(LAST_ROLL_KEY) !== day) write(LAST_ROLL_KEY, day);
+}
+
+function subscribeSeconds(listener: () => void) {
+  const id = setInterval(listener, 1000);
+  return () => clearInterval(id);
+}
+
+/** The current time in whole seconds, ticking every second (null while server rendering). */
+export function useNowSeconds(): number | null {
+  return useSyncExternalStore(subscribeSeconds, () => Math.floor(Date.now() / 1000), () => null);
 }

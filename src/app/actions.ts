@@ -2,13 +2,23 @@
 
 import { refresh } from "next/cache";
 
+import { loadSeasons } from "@/lib/data/seasons";
+import { decoyNames } from "@/lib/roll";
 import { rollForToday, type DailyRoll } from "@/lib/roll/daily";
 import { supabaseRollStore } from "@/lib/roll/store";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { topPercent } from "@/lib/scoring/distribution";
 import { createClient } from "@/lib/supabase/server";
 
 export type RollTodayResult =
-  | { ok: true; roll: DailyRoll; created: boolean }
+  | {
+      ok: true;
+      roll: DailyRoll;
+      created: boolean;
+      /** Other players from the season, for the reveal's name reel. */
+      decoys: string[];
+      topPercent: number;
+    }
   | { ok: false; error: string };
 
 /**
@@ -24,7 +34,14 @@ export async function rollToday(): Promise<RollTodayResult> {
   if (!userId) return { ok: false, error: "You're not signed in. Reload the page and try again." };
 
   try {
-    return { ok: true, ...(await rollForToday(supabaseRollStore(createAdminClient()), userId)) };
+    const { roll, created } = await rollForToday(supabaseRollStore(createAdminClient()), userId);
+    return {
+      ok: true,
+      roll,
+      created,
+      decoys: decoyNames(loadSeasons(), roll.season),
+      topPercent: topPercent(roll.score.total),
+    };
   } catch (e) {
     console.error(e);
     return { ok: false, error: "Couldn't save your roll. Please try again." };

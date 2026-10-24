@@ -5,8 +5,8 @@
 
 import type { EarnedBadge, ScoreResult } from "./scoring/types";
 
-export const YEAR_SPIN_MS = 1000;
-export const PLAYER_MS = 700;
+export const YEAR_SPIN_MS = 1300;
+export const PLAYER_MS = 1500;
 /** Points badges share this much time, within the per-badge bounds below. */
 const POINTS_BUDGET_MS = 2400;
 const POINTS_STEP_MIN_MS = 150;
@@ -75,4 +75,14 @@ export function frameIndexAt(timeline: RevealTimeline, elapsed: number): number 
   let i = 0;
   while (i + 1 < timeline.frames.length && timeline.frames[i + 1].at <= elapsed) i++;
   return i;
+}
+
+/**
+ * How a roll's badges are listed: multipliers first, then points, each from
+ * biggest to smallest (ties keep their reveal order).
+ */
+export function badgeSections(badges: readonly EarnedBadge[]) {
+  const multipliers = badges.filter((b) => b.multiplier !== null).sort((a, b) => b.multiplier! - a.multiplier!);
+  const points = badges.filter((b) => b.multiplier === null).sort((a, b) => b.points - a.points);
+  return { multipliers, points };
 }

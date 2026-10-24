@@ -1,14 +1,22 @@
 "use client";
 
+import { Dices } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 import { RollReveal } from "@/components/roll-reveal";
+import { buttonClass, Eyebrow } from "@/components/ui";
 import { fmtDay } from "@/lib/format";
-import type { DailyRoll } from "@/lib/roll/daily";
+import { rememberRollDay } from "@/lib/prefs";
 import { createClient } from "@/lib/supabase/client";
 
-import { rollToday } from "./actions";
+import { rollToday, type RollTodayResult } from "./actions";
+
+type Rolled = Extract<RollTodayResult, { ok: true }>;
+
+/** True when a key press isn't aimed at a form field or another control. */
+const isFreeKey = (e: KeyboardEvent) =>
+  !(e.target instanceof HTMLElement && e.target.closest("input, textarea, select, button, a, [contenteditable]"));
 
 /**
  * Rolls today's season and plays the reveal. A visitor without a session
@@ -20,7 +28,7 @@ export function RollButton() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [revealing, setRevealing] = useState<DailyRoll | null>(null);
+  const [revealing, setRevealing] = useState<Rolled | null>(null);
 
   function roll() {
     setError(null);
@@ -35,33 +43,51 @@ export function RollButton() {
         }
       }
       const result = await rollToday();
-      if (!result.ok) setError(result.error);
+      if (!result.ok) return setError(result.error);
+      rememberRollDay(result.roll.day);
       // Already rolled (e.g. in another tab): just show it.
-      else if (!result.created) router.refresh();
-      else setRevealing(result.roll);
+      if (!result.created) router.refresh();
+      else setRevealing(result);
     });
   }
+
+  // Space or Enter rolls.
+  useEffect(() => {
+    if (revealing || pending) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.key === " " || e.key === "Enter") && isFreeKey(e)) {
+        e.preventDefault();
+        roll();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
 
   if (revealing) {
     return (
       <div>
-        <h2 className="mb-3 text-sm font-medium tracking-wide text-muted uppercase">
-          Today&apos;s roll · {fmtDay(revealing.day)}
-        </h2>
-        <RollReveal season={revealing.season} score={revealing.score} onDone={() => router.refresh()} />
+        <Eyebrow className="mb-3">Today&apos;s roll · {fmtDay(revealing.roll.day)}</Eyebrow>
+        <RollReveal
+          season={revealing.roll.season}
+          score={revealing.roll.score}
+          decoys={revealing.decoys}
+          topPercent={revealing.topPercent}
+          onDone={() => router.refresh()}
+        />
       </div>
     );
   }
 
   return (
     <div className="flex flex-col items-start gap-3">
-      <button
-        onClick={roll}
-        disabled={pending}
-        className="rounded-lg bg-accent px-8 py-4 text-xl font-semibold text-accent-ink hover:brightness-105 disabled:opacity-60"
-      >
+      <button onClick={roll} disabled={pending} className={`${buttonClass({ size: "lg" })} min-w-64`}>
+        <Dices className={`size-5 ${pending ? "animate-spin" : ""}`} aria-hidden />
         {pending ? "Rolling…" : "Roll today's season"}
       </button>
+      <p className="text-xs text-subtle">
+        or press <kbd className="rounded border border-line bg-surface-2 px-1.5 py-0.5 font-mono text-[11px]">Space</kbd>
+      </p>
       {error && <p className="text-red-500">{error}</p>}
     </div>
   );

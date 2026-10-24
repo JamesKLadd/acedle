@@ -1,12 +1,15 @@
+import { Timer, Trophy } from "lucide-react";
 import Link from "next/link";
 
+import { NextRollCountdown, RememberRoll } from "@/components/countdown";
 import { RollCard } from "@/components/roll-card";
 import { ShareButton } from "@/components/share-button";
+import { buttonClass, Eyebrow } from "@/components/ui";
 import type { OAuthProvider } from "@/lib/auth/providers";
 import { getAuthSettings, type AuthSettings } from "@/lib/auth/settings";
 import type { SignInNotice } from "@/lib/auth/sign-in";
 import { getViewer } from "@/lib/auth/viewer";
-import { fmtDay, fmtTopPercent } from "@/lib/format";
+import { fmtDay } from "@/lib/format";
 import { getRollBoard } from "@/lib/leaderboard";
 import { toDailyRoll, utcDay } from "@/lib/roll/daily";
 import { supabaseRollStore } from "@/lib/roll/store";
@@ -72,26 +75,21 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
 
       {roll ? (
         <div>
-          <h2 className="mb-3 text-sm font-medium tracking-wide text-muted uppercase">
-            Today&apos;s roll · {fmtDay(day)}
-          </h2>
-          <RollCard season={roll.season} score={roll.score} />
-          <div className="mt-4 flex flex-wrap items-center gap-4">
+          <RememberRoll day={roll.day} />
+          <Eyebrow className="mb-3">Today&apos;s roll · {fmtDay(day)}</Eyebrow>
+          <RollCard season={roll.season} score={roll.score} topPercent={top} />
+          <div className="mt-4 flex flex-wrap items-center gap-3">
             <ShareButton text={shareText({ ...roll, topPercent: top })} path={`/rolls/${roll.id}`} />
-            <span className="text-sm text-muted">That&apos;s the {fmtTopPercent(top)} of all seasons.</span>
-          </div>
-          <p className="mt-3 text-sm text-muted">
             {mine && (
-              <>
-                You&apos;re <strong className="text-fg">#{mine.rank}</strong> of {mine.entries} today ·{" "}
-                <Link href="/leaderboard" className="underline underline-offset-4 hover:text-fg">
-                  Leaderboards
-                </Link>{" "}
-                ·{" "}
-              </>
+              <Link href="/leaderboard" className={buttonClass({ variant: "secondary" })}>
+                <Trophy className="size-4" aria-hidden />#{mine.rank} of {mine.entries} today
+              </Link>
             )}
-            Your next roll unlocks at midnight UTC.
-          </p>
+          </div>
+          <div className="mt-4 flex items-center gap-2 rounded-xl border border-line bg-surface px-4 py-3 text-sm text-muted">
+            <Timer className="size-4 shrink-0 text-accent-text" aria-hidden />
+            <NextRollCountdown />
+          </div>
         </div>
       ) : userId || settings.guests ? (
         <RollButton />
