@@ -291,6 +291,7 @@ prerendering.
   - Grand Slam Cup, Laver Cup and Next Gen Finals are excluded.
   - Davis Cup, ATP Cup, United Cup and the World Team Cup count toward W/L but not titles.
   - Olympics count as titles.
+- **Reassigned ranking ids:** the rankings list Martin Damm Sr. (210013) under 102093, the id `atp_players.csv` now gives his son (born 2003). Entries dated before a player's birth go to the id in `REASSIGNED_RANKING_IDS` (`scripts/etl/parse.ts`), and the build fails if any other such entry belongs to a pool player.
 - **Tournament codes** are canonicalized (zero-padding and the 2016–2020 `M0xx` scheme) so title defenses line up across years.
 - **Seasons** follow the match file's year. Early-January events that start in late December belong to the new season.
 - **Ranking points:** when a year's final ranking list lacks points, the latest list with points is used.
@@ -308,7 +309,7 @@ Sackmann's formats:
 | Current ranking list | [Tennis Abstract](https://www.tennisabstract.com/reports/atpRankings.html) (Sackmann's site): rank, name, country, birth date | Weekly (Mondays) |
 
 How they're merged (`scripts/etl/live.ts`):
-- **Players:** TML uses ATP codes ("D643"). Each code is matched to a Sackmann id by name and birth date, then by a unique name. Players Sackmann doesn't know get a stable synthetic id (2,000,000 + the code in base 36). No 2026 top-100 player needs one today.
+- **Players:** TML uses ATP codes ("D643"). Each code is matched to a Sackmann id by name and birth date, then by birth date and the same name words in another order or with some left out ("Yunchaokete Bu" is Sackmann's "Bu Yunchaokete", "Daniel Merida" is "Daniel Merida Aguilar"), then by a unique name. Players Sackmann doesn't know get a stable synthetic id (2,000,000 + the code in base 36). No 2026 top-100 player needs one today.
 - **Matches:** only tournaments that start after Sackmann's last one come from TML, so nothing is counted twice. TML dates matches by the day they're played; each tournament takes its first day as its date. For tournament codes Sackmann knows, Sackmann's name and level win (TML calls Monte Carlo "Monte Carlo" and marks Winston-Salem as a Masters).
 - **Rankings:** every fetched list is added to `data/live/atp_rankings_live.csv`, so real weekly lists pile up over time. Weeks without a fetched list are rebuilt from the rank each player had at each tournament (tour, Challengers and qualifying), up to the newest tournament week. Tennis Abstract answers 403 to GitHub's runners, so the daily job usually can't fetch a new list. The current ranking is then estimated this way and `meta.json` says so (`rankingsEstimated`, shown on `/about`). Even building without any list since June, the estimate for 19 Oct had the right #1, 8 of the top 10 exact, 93 of the top 100 present and a median rank error of 1. Running the fetch from a network Tennis Abstract allows (e.g. `npm run data:fetch && npm run data:build` locally) saves a real list again. Ranking points come from the same per-tournament records.
 - **Checked against the overlap** (January–May 2026, where both Sackmann and TML exist): 98.4% of matches are identical (1,356 of 1,378), and scores agree in 99.4% of them. Rebuilt weekly lists had the right #1 in 14 of 16 weeks, with 96 of the top 100.

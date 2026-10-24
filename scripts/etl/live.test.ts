@@ -64,15 +64,45 @@ describe("player matching", () => {
     expect(match("Nobody", 20000101)).toBeNull();
   });
 
+  const renamed = playerMatcher(
+    new Map<number, PlayerInfo>([
+      [207352, { name: "Bu Yunchaokete", hand: "R", dob: 20020119, country: "CHN", heightCm: 185 }],
+      [210017, { name: "Daniel Merida Aguilar", hand: "R", dob: 20040926, country: "ESP", heightCm: 188 }],
+      [102093, { name: "Martin Damm", hand: "L", dob: 20030930, country: "USA", heightCm: 203 }],
+      [210013, { name: "Martin Damm Sr", hand: "R", dob: 19720801, country: "CZE", heightCm: 188 }],
+      [3, { name: "Juan Martin Lopez", hand: "R", dob: 19990101, country: "ARG", heightCm: null }],
+      [4, { name: "Juan Martin Perez", hand: "R", dob: 19990101, country: "ARG", heightCm: null }],
+    ]),
+  );
+
+  it("matches names in another order or with words left out, when the birth date agrees", () => {
+    expect(renamed("Yunchaokete Bu", 20020119)).toBe(207352);
+    expect(renamed("Daniel Merida", 20040926)).toBe(210017);
+    // A birth date that fits beats a unique name that doesn't.
+    expect(renamed("Martin Damm", 19720801)).toBe(210013);
+    expect(renamed("Martin Damm", 20030930)).toBe(102093);
+    expect(renamed("Yunchaokete Bu", null)).toBeNull();
+    expect(renamed("Yunchaokete Bu", 20020120)).toBeNull();
+  });
+
+  it("doesn't guess from one shared word or between players born the same day", () => {
+    expect(renamed("Bu", 20020119)).toBeNull();
+    expect(renamed("Juan Martin", 19990101)).toBeNull();
+    expect(renamed("Lopez Juan Martin", 19990101)).toBe(3);
+  });
+
   it("resolves TML codes, adding players Sackmann doesn't know", () => {
     const { ids, added } = resolveTmlPlayers(
       [
         { id: "D643", player: "Novak Djokovic", birthdate: "19870522", hand: "R", height: "188", ioc: "SRB" },
         { id: "J0DZ", player: "Rafael Jodar", birthdate: "20060917", hand: "R", height: "191", ioc: "ESP" },
+        { id: "A0FX", player: "Auger-Aliassime Felix", birthdate: "20000808", hand: "R", height: "193", ioc: "CAN" },
       ],
       sackmann,
     );
     expect(ids.get("D643")).toBe(104925);
+    expect(ids.get("A0FX")).toBe(106421);
+    expect(added.size).toBe(1);
     expect(ids.get("J0DZ")).toBe(syntheticId("J0DZ"));
     expect(added.get(syntheticId("J0DZ"))).toEqual({
       name: "Rafael Jodar",

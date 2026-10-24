@@ -64,20 +64,45 @@ export function addDaysYmd(ymd: number, n: number): number {
 
 // ------------------------------------------------------------------ players
 
+/** "Félix Auger-Aliassime" → {"felix", "auger", "aliassime"} */
+const nameWords = (name: string) => new Set(name.split(/[^\p{L}\p{M}]+/u).map(normName).filter(Boolean));
+
+const isSubset = (a: ReadonlySet<string>, b: ReadonlySet<string>) => [...a].every((w) => b.has(w));
+
 /**
- * Maps players from another source to Sackmann ids: by name and birth date,
- * then by name alone when that name is unique in Sackmann's player list.
+ * Maps players from another source to Sackmann ids:
+ * 1. by name and birth date;
+ * 2. by birth date and the same name words in any order, or with some left
+ *    out ("Yunchaokete Bu" is Sackmann's "Bu Yunchaokete", "Daniel Merida"
+ *    is "Daniel Merida Aguilar"), when only one player fits;
+ * 3. by name alone, when that name is unique in Sackmann's player list.
  */
 export function playerMatcher(sackmann: ReadonlyMap<number, PlayerInfo>) {
   const byNameDob = new Map<string, number>();
   const byName = new Map<string, number | null>();
+  const byDob = new Map<number, Array<{ id: number; words: Set<string> }>>();
   for (const [id, p] of sackmann) {
     const n = normName(p.name);
-    if (p.dob) byNameDob.set(`${n}|${p.dob}`, id);
+    if (p.dob) {
+      byNameDob.set(`${n}|${p.dob}`, id);
+      let born = byDob.get(p.dob);
+      if (!born) byDob.set(p.dob, (born = []));
+      born.push({ id, words: nameWords(p.name) });
+    }
     byName.set(n, byName.has(n) ? null : id);
   }
+  const byWordsDob = (name: string, dob: number) => {
+    const words = nameWords(name);
+    const fits = (byDob.get(dob) ?? []).filter((p) => {
+      const [fewer, more] = p.words.size < words.size ? [p.words, words] : [words, p.words];
+      return fewer.size >= 2 && isSubset(fewer, more);
+    });
+    return fits.length === 1 ? fits[0].id : undefined;
+  };
   return (name: string, dob: number | null): number | null =>
-    (dob ? byNameDob.get(`${normName(name)}|${dob}`) : undefined) ?? byName.get(normName(name)) ?? null;
+    (dob ? (byNameDob.get(`${normName(name)}|${dob}`) ?? byWordsDob(name, dob)) : undefined) ??
+    byName.get(normName(name)) ??
+    null;
 }
 
 const HANDS = ["R", "L", "A"] as const;

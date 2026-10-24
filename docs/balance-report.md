@@ -7,13 +7,13 @@ each equally likely to be rolled, so this is the distribution of daily roll scor
 
 | min | p10 | p25 | median | p75 | p90 | p99 | max | mean |
 |---|---|---|---|---|---|---|---|---|
-| 1,080 | 17,640 | 27,420 | 49,140 | 101,880 | 449,064 | 7,443,450 | 103,061,889 | 462,680 |
+| 1,080 | 17,700 | 27,480 | 49,320 | 101,880 | 449,064 | 7,443,450 | 103,061,889 | 462,715 |
 
 | score | share of rolls | about 1 in |
 |---|---|---|
-| 0–9,999 | 2.5% | 39 |
-| 10,000–24,999 | 19.0% | 5 |
-| 25,000–49,999 | 29.0% | 3 |
+| 0–9,999 | 2.5% | 40 |
+| 10,000–24,999 | 18.9% | 5 |
+| 25,000–49,999 | 29.1% | 3 |
 | 50,000–99,999 | 24.1% | 4 |
 | 100,000–249,999 | 11.1% | 9 |
 | 250,000–999,999 | 8.8% | 11 |
@@ -26,11 +26,11 @@ each equally likely to be rolled, so this is the distribution of daily roll scor
 | rank | median | mean | max |
 |---|---|---|---|
 | #1 | 15,807,800 | 25,449,030 | 103,061,889 |
-| #2–5 | 2,064,150 | 2,673,029 | 13,728,330 |
+| #2–5 | 2,064,150 | 2,673,048 | 13,728,330 |
 | #6–10 | 746,064 | 782,331 | 1,839,499 |
-| #11–20 | 233,640 | 243,350 | 581,616 |
-| #21–50 | 70,686 | 75,673 | 253,980 |
-| #51–100 | 27,660 | 30,229 | 96,360 |
+| #11–20 | 233,640 | 243,304 | 581,616 |
+| #21–50 | 70,740 | 75,762 | 253,980 |
+| #51–100 | 27,720 | 30,254 | 96,360 |
 
 ## Top 25 seasons
 
@@ -83,12 +83,12 @@ How often each badge fires, its average value when earned, and its share of all 
 
 | badge | earned by | about 1 in | avg when earned | share of points |
 |---|---|---|---|---|
-| Titlist | 36.8% | 3 | 11,277 | 7.5% |
+| Titlist | 36.8% | 3 | 11,273 | 7.5% |
 | Grand Slam Champion | 2.9% | 34 | ×1.61 | — |
 | Masters Champion | 5.6% | 18 | ×1.16 | — |
 | Year-End Champion | 0.9% | 106 | ×1.25 | — |
 | Olympic Gold | 0.2% | 411 | ×1.25 | — |
-| Finalist | 42.6% | 2 | 2,650 | 2.0% |
+| Finalist | 42.6% | 2 | 2,651 | 2.0% |
 | Slam Finalist | 3.6% | 27 | 15,680 | 1.0% |
 | Deep Run | 7.1% | 14 | 8,018 | 1.0% |
 | Second Week | 13.7% | 7 | 3,439 | 0.8% |
@@ -97,7 +97,7 @@ How often each badge fires, its average value when earned, and its share of all 
 | From the Qualies | 1.4% | 71 | 18,346 | 0.5% |
 | Wildcard Wonder | 1.1% | 90 | 12,585 | 0.3% |
 | Luckiest Loser | 0.2% | 529 | 30,000 | 0.1% |
-| Clay Court King | 17.4% | 6 | 3,387 | 1.1% |
+| Clay Court King | 17.4% | 6 | 3,385 | 1.1% |
 | Grass Master | 5.6% | 18 | 3,897 | 0.4% |
 | Hard Court Hero | 20.4% | 5 | 2,939 | 1.1% |
 | Carpet Era | 4.3% | 23 | 4,800 | 0.4% |
@@ -113,27 +113,27 @@ How often each badge fires, its average value when earned, and its share of all 
 | Rookie | 17.1% | 6 | 6,000 | 1.8% |
 | Rocket | 49.3% | 2 | 6,956 | 6.2% |
 | Flag Bearer | 31.8% | 3 | 4,800 | 2.7% |
-| Match Winner | 99.2% | 1 | 9,076 | 16.2% |
+| Match Winner | 99.4% | 1 | 9,071 | 16.2% |
 | Win Rate | 8.3% | 12 | 10,383 | 1.6% |
 | On Fire | 7.0% | 14 | 5,398 | 0.7% |
 | Unstoppable | 0.1% | 740 | ×1.40 | — |
-| Giant Killer | 61.5% | 2 | 8,334 | 9.2% |
+| Giant Killer | 61.7% | 2 | 8,321 | 9.2% |
 | Dethroner | 9.1% | 11 | 14,714 | 2.4% |
-| Upset Artist | 52.7% | 2 | 5,857 | 5.6% |
+| Upset Artist | 52.8% | 2 | 5,860 | 5.6% |
 | Iron Man | 3.3% | 30 | 9,000 | 0.5% |
-| Five-Set Warrior | 54.2% | 2 | 2,008 | 2.0% |
-| Escape Artist | 16.8% | 6 | 5,394 | 1.6% |
-| Baker | 70.3% | 1 | 1,523 | 1.9% |
+| Five-Set Warrior | 54.3% | 2 | 2,007 | 2.0% |
+| Escape Artist | 16.8% | 6 | 5,393 | 1.6% |
+| Baker | 70.4% | 1 | 1,522 | 1.9% |
 | Tiebreak Titan | 7.8% | 13 | 7,200 | 1.0% |
 | Marathon Man | 12.9% | 8 | 6,000 | 1.4% |
-| Ace Machine | 78.8% | 1 | 6,176 | 8.8% |
-| Big Server | 19.4% | 5 | 7,200 | 2.5% |
+| Ace Machine | 79.0% | 1 | 6,176 | 8.8% |
+| Big Server | 19.5% | 5 | 7,200 | 2.5% |
 | Clutch | 16.7% | 6 | 6,000 | 1.8% |
 | Hold Steady | 4.0% | 25 | 7,200 | 0.5% |
-| Teen Phenom | 2.7% | 37 | 9,600 | 0.5% |
+| Teen Phenom | 2.5% | 40 | 9,600 | 0.4% |
 | Wily Veteran | 6.0% | 17 | 7,200 | 0.8% |
-| Lefty | 14.6% | 7 | 1,200 | 0.3% |
-| Skyscraper | 5.4% | 19 | 1,800 | 0.2% |
+| Lefty | 14.4% | 7 | 1,200 | 0.3% |
+| Skyscraper | 5.2% | 19 | 1,800 | 0.2% |
 | Triple Crown | 0.2% | 463 | ×1.40 | — |
 | Calendar Slam | never | — | — | — |
 | Big Title Sweep | 0.5% | 206 | ×1.50 | — |

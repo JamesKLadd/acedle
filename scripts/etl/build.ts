@@ -26,6 +26,7 @@ import {
   dayNumber,
   normalizeEntry,
   parseScore,
+  rankedPlayer,
   roundOrder,
   setWinner,
   slamRoundOrder,
@@ -85,25 +86,31 @@ function loadPlayers(): Map<number, PlayerInfo> {
 interface Rankings {
   dates: number[];
   byDate: Map<number, RankEntry[]>;
+  /** Ids with entries dated before the player's birth that we couldn't reassign. */
+  rankedBeforeBirth: Set<number>;
 }
 
-function loadRankings(): Rankings {
+function loadRankings(players: ReadonlyMap<number, PlayerInfo>): Rankings {
   const byDate = new Map<number, RankEntry[]>();
+  const rankedBeforeBirth = new Set<number>();
   const files = readdirSync(RAW_DIR).filter((f) => /^atp_rankings_.*\.csv$/.test(f));
   for (const file of files) {
     const lines = readFileSync(join(RAW_DIR, file), "utf8").split("\n");
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
-      const [d, rank, player, points] = line.split(",");
+      const [d, rank, p, points] = line.split(",");
       const date = Number(d);
+      const id = Number(p);
+      const player = rankedPlayer(id, date, players.get(id)?.dob ?? null);
+      if (player === null) rankedBeforeBirth.add(id);
       let list = byDate.get(date);
       if (!list) byDate.set(date, (list = []));
-      list.push({ rank: Number(rank), player: Number(player), points: num(points) });
+      list.push({ rank: Number(rank), player: player ?? id, points: num(points) });
     }
   }
   for (const list of byDate.values()) list.sort((a, b) => a.rank - b.rank);
-  return { dates: [...byDate.keys()].sort((a, b) => a - b), byDate };
+  return { dates: [...byDate.keys()].sort((a, b) => a - b), byDate, rankedBeforeBirth };
 }
 
 // ---------------------------------------------------------------- matches
@@ -380,7 +387,7 @@ function addServe(acc: Accumulator, r: Row, side: "w" | "l") {
 function main() {
   console.log(`Reading raw data from ${RAW_DIR}`);
   const players = loadPlayers();
-  const rankings = loadRankings();
+  const rankings = loadRankings(players);
   const raw = readMatchFiles();
   const live = loadLiveSeason(players, rankings, raw);
   if (live) {
@@ -453,6 +460,18 @@ function main() {
     const top = rankings.byDate.get(d)!.filter((e) => e.rank <= POOL_SIZE).slice(0, POOL_SIZE);
     if (top.length !== POOL_SIZE) console.warn(`  ${y}: only ${top.length} players ranked <= ${POOL_SIZE}`);
     pool.set(y, top);
+  }
+  // Rankings from before a player's birth belong to someone else, so their
+  // stats and history would be wrong.
+  const bornLater = [...pool].flatMap(([y, top]) =>
+    top
+      .filter((e) => rankings.rankedBeforeBirth.has(e.player))
+      .map((e) => `${y} #${e.rank} ${players.get(e.player)?.name} (${e.player})`),
+  );
+  if (bornLater.length) {
+    throw new Error(
+      `Ranked before they were born (a reassigned id? see REASSIGNED_RANKING_IDS in parse.ts): ${bornLater.join(", ")}`,
+    );
   }
   const needed = new Set<string>();
   for (const [y, top] of pool) for (const e of top) needed.add(key(y, e.player));
