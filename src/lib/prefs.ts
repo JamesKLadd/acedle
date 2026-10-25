@@ -1,4 +1,4 @@
-// Per-browser preferences (theme, sound), kept in localStorage. Read them with
+// Per-browser preferences (theme, sound, tournament controls), kept in localStorage. Read them with
 // the hooks below, which return the server-safe default until hydrated.
 
 import { useCallback, useSyncExternalStore } from "react";
@@ -8,6 +8,7 @@ import { THEME_KEY } from "./theme-script";
 export type Theme = "system" | "light" | "dark";
 
 const SOUND_KEY = "acedle:sound";
+const CONTROLS_KEY = "acedle:controls";
 const LAST_ROLL_KEY = "acedle:lastRollDay";
 
 const listeners = new Set<() => void>();
@@ -67,6 +68,22 @@ export function useSound(): [boolean, (on: boolean) => void] {
   const on = useSyncExternalStore(subscribe, soundEnabled, () => false);
   const set = useCallback((next: boolean) => write(SOUND_KEY, next ? "on" : null), []);
   return [on, set];
+}
+
+/**
+ * How the tournament timing game is played: "tap" (the ball starts by itself,
+ * tap to stop it) or "hold" (hold to start the ball, release to stop it).
+ */
+export type Controls = "tap" | "hold";
+
+export function useControls(): [Controls, (controls: Controls) => void] {
+  const controls = useSyncExternalStore(
+    subscribe,
+    () => (read(CONTROLS_KEY) === "hold" ? "hold" : "tap") as Controls,
+    () => "tap" as Controls,
+  );
+  const set = useCallback((next: Controls) => write(CONTROLS_KEY, next === "tap" ? null : next), []);
+  return [controls, set];
 }
 
 /** The UTC day this browser last saw its daily roll (drives the header's "Roll ready" pill). */
