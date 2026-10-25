@@ -181,7 +181,7 @@ function ViewerNote({
   }
   const Icon = icon;
   return (
-    <div className="mb-4 flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-2.5 text-sm text-muted">
+    <div className="mb-4 flex items-center gap-3 rounded-md border-2 border-line bg-surface shadow-[3px_3px_0_0_var(--line)] px-4 py-2.5 text-sm text-muted">
       <Icon className="size-4 shrink-0 text-accent-text" aria-hidden />
       <span className="flex-1">{text}</span>
       {action}

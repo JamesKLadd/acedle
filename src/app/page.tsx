@@ -1,61 +1,50 @@
-import { ArrowRight, Award, Dices, Trophy } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { CardBack } from "@/components/card-photo";
+
 import { Today, TodaySkeleton } from "./today";
 
-const STEPS = [
-  { icon: Dices, title: "Roll", text: "A random season, then a random top-100 player" },
-  { icon: Award, title: "Score", text: "Their real results earn badges and multipliers" },
-  { icon: Trophy, title: "Compete", text: "Climb the daily, weekly and all-time boards" },
-];
-
-/** Faint court lines behind the hero. */
-function CourtLines() {
+/** Three card backs fanned out, the front one waiting to be turned over. */
+function FannedCards() {
+  const card = "absolute top-0 left-1/2 h-40 w-28 overflow-hidden rounded-md border-2 border-fg shadow-[3px_3px_0_0_rgb(0_0_0/0.25)]";
   return (
-    <svg
-      viewBox="0 0 400 220"
-      className="pointer-events-none absolute -top-4 -right-28 hidden sm:block h-[115%] opacity-[0.14] [mask-image:linear-gradient(to_left,black_25%,transparent_60%)]"
-      fill="none"
-      stroke="#d4f53c"
-      strokeWidth="2"
-      aria-hidden
-    >
-      <rect x="20" y="10" width="360" height="200" />
-      <rect x="20" y="35" width="360" height="150" />
-      <line x1="200" y1="10" x2="200" y2="210" strokeWidth="3" />
-      <line x1="110" y1="35" x2="110" y2="185" />
-      <line x1="290" y1="35" x2="290" y2="185" />
-      <line x1="110" y1="110" x2="290" y2="110" />
-    </svg>
+    <div className="relative mx-auto h-44 w-48 shrink-0" aria-hidden>
+      <div className={`${card} -ml-[5.5rem] origin-bottom -rotate-[14deg]`}>
+        <CardBack />
+      </div>
+      <div className={`${card} -ml-[1.5rem] origin-bottom rotate-[14deg]`}>
+        <CardBack />
+      </div>
+      <div className={`${card} -ml-14 -translate-y-1 grid place-items-center bg-surface`}>
+        <span className="font-display text-6xl text-accent">?</span>
+      </div>
+    </div>
   );
 }
 
 export default function Home({ searchParams }: PageProps<"/">) {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pt-8 pb-6">
-      <section className="relative overflow-hidden rounded-3xl bg-panel p-6 text-panel-fg shadow-lg sm:p-8">
-        <CourtLines />
-        <p className="relative text-xs font-semibold tracking-[0.2em] text-[#d4f53c] uppercase">Daily tennis roll</p>
-        <h1 className="relative mt-2 font-display text-[2.6rem] leading-[0.92] font-extrabold uppercase min-[400px]:text-5xl sm:text-6xl">
-          Roll a season.
-          <br />
-          <span className="text-[#d4f53c]">Score the stats.</span>
-        </h1>
-        <p className="relative mt-3 max-w-md text-panel-fg/75">
-          One roll a day from every ATP season since 1990. Real results, real badges, one score.
-        </p>
-        <ul className="relative mt-6 grid grid-cols-3 gap-2 sm:gap-3">
-          {STEPS.map(({ icon: Icon, title, text }) => (
-            <li key={title} className="flex flex-col gap-1.5 rounded-xl bg-white/5 p-3 ring-1 ring-white/10 sm:flex-row sm:gap-3">
-              <Icon className="mt-0.5 size-5 shrink-0 text-[#d4f53c]" aria-hidden />
-              <span>
-                <span className="block text-sm font-semibold">{title}</span>
-                <span className="hidden text-xs text-panel-fg/65 sm:block">{text}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
+      {/* Today's pack: a red wrapper with a crimped edge. */}
+      <section className="relative overflow-hidden rounded-lg border-2 border-fg bg-accent text-accent-ink shadow-[5px_5px_0_0_var(--blue)]">
+        <div className="flex flex-col gap-6 p-6 sm:flex-row sm:items-center sm:p-8">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-extrabold tracking-[0.25em] text-gold uppercase">Series 1990–2026 · one card a day</p>
+            <h1 className="mt-2 font-display text-4xl leading-none uppercase [text-shadow:3px_3px_0_var(--blue)] sm:text-5xl">
+              Roll today&apos;s card
+            </h1>
+            <p className="mt-3 max-w-sm text-sm text-accent-ink/90 sm:text-base">
+              Every card is a real ATP season from 1990 to now. The player&apos;s results that year earn the points.
+            </p>
+          </div>
+          <FannedCards />
+        </div>
+        <div
+          className="h-3 border-t-2 border-fg bg-[repeating-linear-gradient(90deg,var(--gold)_0_8px,var(--accent)_8px_16px)]"
+          aria-hidden
+        />
       </section>
 
       <div className="mt-8">
@@ -66,10 +55,10 @@ export default function Home({ searchParams }: PageProps<"/">) {
 
       <Link
         href="/sandbox"
-        className="group mt-8 flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-5 py-4 transition hover:border-accent/60"
+        className="group mt-8 flex items-center justify-between gap-3 rounded-lg border-2 border-line bg-surface px-5 py-4 shadow-[4px_4px_0_0_var(--line)] transition hover:border-fg"
       >
         <span>
-          <span className="block font-semibold">Practice in the sandbox</span>
+          <span className="block font-bold">Practice in the sandbox</span>
           <span className="block text-sm text-muted">Unlimited rolls with adjustable luck. Nothing is saved.</span>
         </span>
         <ArrowRight className="size-5 text-accent-text transition group-hover:translate-x-1" aria-hidden />

@@ -9,6 +9,7 @@ import { TournamentLink } from "@/components/tournament/tournament-link";
 import { buttonClass } from "@/components/ui";
 import { getViewer } from "@/lib/auth/viewer";
 import { fmtDay, fmtScore } from "@/lib/format";
+import { seasonPhoto } from "@/lib/photos";
 import { getSharedRoll } from "@/lib/roll/shared";
 import { topPercent } from "@/lib/scoring/distribution";
 import { shareText } from "@/lib/share";
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: PageProps<"/rolls/[id]">): Pr
 export default function RollPage({ params }: PageProps<"/rolls/[id]">) {
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-10">
-      <Suspense fallback={<div className="h-96 animate-pulse rounded-xl bg-surface-2" />}>
+      <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-surface-2" />}>
         <RollDetail params={params} />
       </Suspense>
     </main>
@@ -55,7 +56,12 @@ async function RollDetail({ params }: { params: Promise<{ id: string }> }) {
       <h1 className="mt-4 mb-3 text-xs font-semibold tracking-[0.14em] text-muted uppercase">
         {fmtDay(roll.day)}, {roll.day.slice(0, 4)}
       </h1>
-      <RollCard season={roll.season} score={roll.score} topPercent={topPercent(roll.score.total)} />
+      <RollCard
+        season={roll.season}
+        score={roll.score}
+        topPercent={topPercent(roll.score.total)}
+        photo={seasonPhoto(roll.season.playerId, roll.season.year)}
+      />
       <div className="mt-4 flex flex-wrap items-center gap-4">
         {isOwner ? (
           <ShareButton

@@ -1,0 +1,54 @@
+# Looks up a photo for every player-season on Wikimedia Commons
+# (scripts/etl/photos.ts) and commits data/photos.json when it changed. The
+# push redeploys the app. Runs monthly (new seasons, new photos) and by hand
+# from the Actions tab. It's slow on purpose: one request at a time.
+
+name: Refresh player photos
+
+on:
+  schedule:
+    - cron: "41 7 3 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Shares the data refresh's group, so the two never push at the same time.
+concurrency:
+  group: refresh-data
+
+jobs:
+  photos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # The player list (with Wikidata ids) comes from the Sackmann archive.
+      - uses: actions/cache@v4
+        with:
+          path: data/raw/tennis-sackmann-archive
+          key: sackmann-archive-v1
+      - run: npm run data:fetch
+
+      - run: npm run data:photos
+        env:
+          ACEDLE_PHOTO_PAUSE_MS: "300"
+
+      - name: Commit changed photos
+        run: |
+          git add data/photos.json
+          if git diff --cached --quiet; then
+            echo "No changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Refresh player photos ($(jq -r .fetched data/photos.json))"
+          git pull --rebase
+          git push

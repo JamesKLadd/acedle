@@ -97,6 +97,12 @@ export default function AboutPage() {
           Acedle is a non-commercial fan project and isn&apos;t affiliated with the ATP Tour or any player.
         </p>
         <p>
+          Player photos come from <A href="https://commons.wikimedia.org/">Wikimedia Commons</A>, freely licensed by
+          their photographers; each card credits its photo&apos;s author and license and links to its Commons page.
+          A photo from the same season is used where there is one, otherwise the nearest year&apos;s (the card says
+          which year). Players without one get a plain card.
+        </p>
+        <p>
           On systems without flag emoji (like Windows), flags are drawn with{" "}
           <A href="https://github.com/jdecked/twemoji">Twemoji</A> art (
           <A href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</A>) via the{" "}

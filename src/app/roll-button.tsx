@@ -84,6 +84,7 @@ export function RollButton({ total, rolls, children }: { total: number; rolls: n
             score={revealing.roll.score}
             decoys={revealing.decoys}
             topPercent={revealing.topPercent}
+            photo={revealing.photo}
             onDone={() => setTallying(true)}
           />
         </div>

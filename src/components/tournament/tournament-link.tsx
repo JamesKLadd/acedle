@@ -37,7 +37,7 @@ export function TournamentLink({
   return (
     <Link
       href={`/rolls/${rollId}/tournament`}
-      className={`group flex items-center gap-4 rounded-2xl border bg-surface px-5 py-4 transition hover:border-accent/60 ${
+      className={`group flex items-center gap-4 rounded-lg border-2 bg-surface px-5 py-4 shadow-[4px_4px_0_0_var(--line)] transition hover:border-fg ${
         champion ? "border-legendary/60" : "border-line"
       }`}
     >

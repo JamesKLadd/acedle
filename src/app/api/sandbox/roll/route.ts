@@ -5,6 +5,8 @@
 
 import { findSeason, loadSeasons } from "@/lib/data/seasons";
 import type { PlayerSeason } from "@/lib/data/types";
+import { seasonPhoto } from "@/lib/photos";
+import type { SeasonPhoto } from "@/lib/photos-types";
 import { decoyNames, rollSeason } from "@/lib/roll";
 import { scoreSeason, type ScoreResult } from "@/lib/scoring";
 import { topPercent } from "@/lib/scoring/distribution";
@@ -16,6 +18,7 @@ export interface SandboxRollResponse {
   topPercent: number;
   /** Other players from the season, for the reveal's name reel. */
   decoys: string[];
+  photo: SeasonPhoto | null;
 }
 
 export async function GET(request: Request) {
@@ -33,5 +36,6 @@ export async function GET(request: Request) {
     score,
     topPercent: topPercent(score.total),
     decoys: decoyNames(loadSeasons(), season),
+    photo: seasonPhoto(season.playerId, season.year),
   } satisfies SandboxRollResponse);
 }

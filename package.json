@@ -11,6 +11,7 @@
     "test": "vitest run",
     "data:fetch": "tsx scripts/etl/fetch.ts",
     "data:build": "tsx scripts/etl/build.ts",
+    "data:photos": "tsx scripts/etl/photos.ts",
     "balance": "tsx scripts/balance.ts",
     "db:seed": "tsx scripts/db/seed.ts"
   },

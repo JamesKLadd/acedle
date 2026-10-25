@@ -21,7 +21,7 @@ async function Dex() {
   const totals = poolTotals(loadSeasons());
   return (
     <>
-      <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5">
+      <div className="flex flex-col gap-4 rounded-lg border-2 border-line bg-surface shadow-[4px_4px_0_0_var(--line)] p-5">
         <Progress label="Players" value={dex.players.length} total={totals.players} />
         <Progress label="Player-seasons" value={dex.seasons} total={totals.seasons} />
         <Progress label="Years" value={dex.rollsPerYear.size} total={totals.years.length} />
@@ -52,7 +52,7 @@ async function Dex() {
 
       <SectionTitle className="mt-8 mb-3">Players</SectionTitle>
       {dex.players.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-line py-10 text-center text-muted">
+        <p className="rounded-lg border-2 border-dashed border-line py-10 text-center text-muted">
           Every player you roll is added here.
         </p>
       ) : (
@@ -60,7 +60,7 @@ async function Dex() {
           {dex.players.map((p) => (
             <li
               key={p.playerId}
-              className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5"
+              className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-md border-2 border-line bg-surface shadow-[3px_3px_0_0_var(--line)] px-3 py-2.5"
             >
               <span className="text-2xl leading-none" aria-hidden>
                 {flag(p.country)}

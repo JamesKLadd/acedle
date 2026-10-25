@@ -38,7 +38,7 @@ function Name({ e, className = "" }: { e: Entrant; className?: string }) {
 
 function Contender({ e, label, odds }: { e: Entrant; label: string; odds: number }) {
   return (
-    <div className="min-w-0 rounded-xl border border-line bg-surface px-3 py-2.5">
+    <div className="min-w-0 rounded-md border-2 border-line bg-surface shadow-[3px_3px_0_0_var(--line)] px-3 py-2.5">
       <p className="text-[10px] font-semibold tracking-[0.14em] text-muted uppercase">
         {label} · seed {e.seed}
       </p>
@@ -132,7 +132,7 @@ export function Tournament({
   const state = useMemo(() => tournamentState(setup, sets), [setup, sets]);
   const you = setup.entrants[setup.you];
 
-  // Switching between the draw and a match: bring the top into view.
+  // Switching between the draw and a match: bring its top into view if it is off screen.
   const root = useRef<HTMLDivElement>(null);
   const first = useRef(true);
   useEffect(() => {
@@ -141,7 +141,7 @@ export function Tournament({
       return;
     }
     const top = root.current?.getBoundingClientRect().top ?? 0;
-    if (top < 64) root.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (top < 64 || top > window.innerHeight / 2) root.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [view, decided]);
 
   function persist(expected: number, won: boolean) {
@@ -186,7 +186,7 @@ export function Tournament({
 
   const busy = saving !== null;
   const errorBanner = error && (
-    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm">
+    <div className="flex flex-wrap items-center gap-3 rounded-md border-2 border-red-500/50 bg-red-500/10 px-4 py-3 text-sm">
       <span className="flex-1">{error}</span>
       <button onClick={() => saving && persist(saving.expected, saving.won)} className={buttonClass({ size: "sm" })}>
         <RotateCcw className="size-3.5" aria-hidden /> Retry

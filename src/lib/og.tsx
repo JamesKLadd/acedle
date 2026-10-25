@@ -1,6 +1,6 @@
-// Shared look for the link preview images (opengraph-image.tsx files): the
-// dark scoreboard panel, court lines, the wordmark, and Barlow Condensed
-// (assets/fonts, SIL OFL) for all text.
+// Shared look for the link preview images (opengraph-image.tsx files): cream
+// card stock, the red maker's badge, a gold-and-red striped edge. Alfa Slab
+// One for display and Courier Prime for text (assets/fonts, SIL OFL).
 
 import "server-only";
 
@@ -14,36 +14,40 @@ import type { Rarity } from "./rarity";
 export const OG_SIZE = { width: 1200, height: 630 };
 
 export const OG = {
-  bg: "#060d1c",
-  panel: "#0d1a33",
-  line: "#233a63",
-  fg: "#eaf0fb",
-  muted: "#93a5c6",
-  accent: "#d4f53c",
-  ink: "#0a1428",
+  bg: "#ebe1cb",
+  card: "#fbf6ea",
+  line: "#d6c6a3",
+  ink: "#1f2233",
+  muted: "#685e4b",
+  red: "#d63a2f",
+  cream: "#fff8ec",
+  blue: "#1f4aa0",
+  gold: "#f4b81c",
 };
 
-/** Dark-theme rarity colors (see globals.css). */
+/** Light-theme rarity colors (see globals.css). */
 export const OG_RARITY: Record<Rarity, string> = {
-  common: "#8da0c2",
-  rare: "#5aa2ff",
-  epic: "#b08cff",
-  legendary: "#f5c542",
-  mythic: "#ff6ec7",
+  common: "#857b66",
+  rare: "#1f6cc0",
+  epic: "#7843b5",
+  legendary: "#c18a05",
+  mythic: "#cf2e78",
 };
 
-type Font = { name: string; data: Buffer; weight: 600 | 800; style: "normal" };
+type Font = { name: string; data: Buffer; weight: 400 | 700; style: "normal" };
 
 let fonts: Promise<Font[]> | undefined;
 
-/** The fonts option for ImageResponse (read once per server). */
+/** The fonts option for ImageResponse (read once per server). Families: "Slab", "Mono". */
 export function ogFonts(): Promise<Font[]> {
   fonts ??= Promise.all(
-    ([
-      ["BarlowCondensed-SemiBold.ttf", 600],
-      ["BarlowCondensed-ExtraBold.ttf", 800],
-    ] as const).map(async ([file, weight]) => ({
-      name: "Barlow",
+    (
+      [
+        ["Slab", "AlfaSlabOne-Regular.ttf", 400],
+        ["Mono", "CourierPrime-Bold.ttf", 700],
+      ] as const
+    ).map(async ([name, file, weight]) => ({
+      name,
       data: await readFile(join(process.cwd(), "assets/fonts", file)),
       weight,
       style: "normal" as const,
@@ -52,45 +56,47 @@ export function ogFonts(): Promise<Font[]> {
   return fonts;
 }
 
-function Ball({ size }: { size: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="11" fill={OG.accent} />
-      <path
-        d="M4.2 4.6c3.6 3.9 3.6 10.9 0 14.8M19.8 4.6c-3.6 3.9-3.6 10.9 0 14.8"
-        fill="none"
-        stroke={OG.ink}
-        strokeOpacity="0.55"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
+/** An image as a data URL, or null (link previews never fail over a photo). */
+export async function ogImageData(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+    if (!res.ok) return null;
+    const type = res.headers.get("content-type") ?? "image/jpeg";
+    return `data:${type};base64,${Buffer.from(await res.arrayBuffer()).toString("base64")}`;
+  } catch {
+    return null;
+  }
 }
 
-function CourtLines() {
+/** The red maker's badge with the gold star, tilted. */
+export function OgLogo({ size = 40 }: { size?: number }) {
   return (
-    <svg
-      width="760"
-      height="418"
-      viewBox="0 0 400 220"
-      fill="none"
-      stroke={OG.accent}
-      strokeOpacity="0.09"
-      strokeWidth="2"
-      style={{ position: "absolute", right: -150, bottom: -40 }}
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: size * 0.25,
+        padding: `${size * 0.12}px ${size * 0.35}px`,
+        background: OG.red,
+        color: OG.cream,
+        border: `4px solid ${OG.ink}`,
+        borderRadius: 8,
+        boxShadow: `6px 6px 0 ${OG.blue}`,
+        transform: "rotate(-3deg)",
+        fontFamily: "Slab",
+        fontSize: size,
+        letterSpacing: 2,
+      }}
     >
-      <rect x="20" y="10" width="360" height="200" />
-      <rect x="20" y="35" width="360" height="150" />
-      <line x1="200" y1="10" x2="200" y2="210" strokeWidth="3" />
-      <line x1="110" y1="35" x2="110" y2="185" />
-      <line x1="290" y1="35" x2="290" y2="185" />
-      <line x1="110" y1="110" x2="290" y2="110" />
-    </svg>
+      <svg width={size * 0.5} height={size * 0.5} viewBox="0 0 24 24">
+        <path d="M12 1.5l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.6l-6.4 3.5L7 14l-5.3-5 7.2-.9z" fill={OG.gold} />
+      </svg>
+      ACEDLE
+    </div>
   );
 }
 
-/** The frame every card shares: wordmark top left, `aside` top right. */
+/** The frame every card shares: logo top left, `aside` top right, a striped bottom edge. */
 export function OgFrame({ aside, children }: { aside?: ReactNode; children: ReactNode }) {
   return (
     <div
@@ -99,39 +105,43 @@ export function OgFrame({ aside, children }: { aside?: ReactNode; children: Reac
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        position: "relative",
-        padding: "56px 64px",
-        background: `linear-gradient(135deg, ${OG.panel} 0%, ${OG.bg} 70%)`,
-        color: OG.fg,
-        fontFamily: "Barlow",
-        fontWeight: 600,
+        background: OG.bg,
+        color: OG.ink,
+        fontFamily: "Mono",
       }}
     >
-      <CourtLines />
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <Ball size={44} />
-          <div style={{ display: "flex", fontSize: 44, fontWeight: 800, letterSpacing: 2 }}>ACEDLE</div>
+      <div style={{ display: "flex", flexDirection: "column", flexGrow: 1, padding: "48px 64px 36px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <OgLogo />
+          {aside && <div style={{ display: "flex", fontSize: 28, color: OG.muted, letterSpacing: 2 }}>{aside}</div>}
         </div>
-        {aside && <div style={{ display: "flex", fontSize: 30, color: OG.muted, letterSpacing: 1 }}>{aside}</div>}
+        {children}
       </div>
-      {children}
+      <div
+        style={{
+          display: "flex",
+          height: 24,
+          borderTop: `4px solid ${OG.ink}`,
+          backgroundImage: `repeating-linear-gradient(90deg, ${OG.gold} 0px, ${OG.gold} 18px, ${OG.red} 18px, ${OG.red} 36px)`,
+        }}
+      />
     </div>
   );
 }
 
-/** A rounded pill, e.g. the rarity. */
+/** A rubber-stamp style pill, e.g. the rarity. */
 export function OgChip({ color, children }: { color: string; children: ReactNode }) {
   return (
     <div
       style={{
         display: "flex",
         alignItems: "center",
-        padding: "6px 18px",
-        borderRadius: 999,
-        border: `2px solid ${color}`,
+        padding: "4px 16px",
+        borderRadius: 6,
+        border: `4px solid ${color}`,
+        background: OG.card,
         color,
-        fontSize: 28,
+        fontSize: 26,
         letterSpacing: 2,
         textTransform: "uppercase",
       }}

@@ -5,30 +5,34 @@ import { Crown, Sparkles } from "lucide-react";
 import type { ReactNode, Ref } from "react";
 
 import type { PlayerSeason } from "@/lib/data/types";
+import type { SeasonPhoto } from "@/lib/photos-types";
 import { flag } from "@/lib/flags";
 import { fmtMult, fmtScore, fmtTopPercent, fmtYmd } from "@/lib/format";
 import { isSpecial, rankTier, rarityOf, RARITY_TEXT, type Rarity } from "@/lib/rarity";
 import { badgeSections } from "@/lib/reveal";
 import type { BadgeCategory, EarnedBadge, ScoreResult } from "@/lib/scoring/types";
 
+import { CardPhoto } from "./card-photo";
 import { Chip } from "./ui";
 
+/** Badge categories as rubber stamps: outlined in the category's color. */
 export const CATEGORY_STYLES: Record<BadgeCategory, string> = {
-  titles: "bg-cat-titles/15 text-cat-titles",
-  surface: "bg-cat-surface/15 text-cat-surface",
-  ranking: "bg-cat-ranking/15 text-cat-ranking",
-  matches: "bg-cat-matches/15 text-cat-matches",
-  serve: "bg-cat-serve/15 text-cat-serve",
-  profile: "bg-cat-profile/15 text-cat-profile",
-  jackpot: "bg-cat-jackpot/15 text-cat-jackpot",
+  titles: "border-cat-titles text-cat-titles",
+  surface: "border-cat-surface text-cat-surface",
+  ranking: "border-cat-ranking text-cat-ranking",
+  matches: "border-cat-matches text-cat-matches",
+  serve: "border-cat-serve text-cat-serve",
+  profile: "border-cat-profile text-cat-profile",
+  jackpot: "border-cat-jackpot text-cat-jackpot",
 };
 
-const FRAME_BORDER: Record<Rarity, string> = {
-  common: "border-line",
-  rare: "border-rare/70",
-  epic: "border-epic/70",
-  legendary: "border-transparent",
-  mythic: "border-transparent",
+/** The card's printed border, by rarity (legendary and mythic get foil). */
+const FRAME: Record<Rarity, string> = {
+  common: "var(--blue)",
+  rare: "var(--rare)",
+  epic: "var(--epic)",
+  legendary: "var(--legendary)",
+  mythic: "var(--mythic)",
 };
 
 const SHINE: Record<"legendary" | "mythic", string> = {
@@ -38,23 +42,20 @@ const SHINE: Record<"legendary" | "mythic", string> = {
 };
 
 /**
- * The card's outline, colored by rarity. Legendary and mythic rolls get an
- * animated shining border. `rarity` null keeps the plain outline (mid-reveal).
+ * The card itself: card stock inside a thick printed border colored by
+ * rarity. Legendary and mythic rolls get an animated foil border. `rarity`
+ * null keeps the plain blue border (mid-reveal).
  */
 export function RarityFrame({ rarity, children }: { rarity: Rarity | null; children: ReactNode }) {
   const special = rarity !== null && isSpecial(rarity);
   return (
     <div
-      className={`rounded-[18px] p-[2px] ${special ? "animate-shine" : ""}`}
-      style={special ? { background: SHINE[rarity as "legendary" | "mythic"] } : undefined}
+      className={`rounded-xl border-2 border-fg p-[7px] shadow-[5px_5px_0_0_rgb(0_0_0/0.18)] transition-[background] duration-500 ${
+        special ? "animate-shine" : ""
+      }`}
+      style={{ background: special ? SHINE[rarity as "legendary" | "mythic"] : FRAME[rarity ?? "common"] }}
     >
-      <section
-        className={`relative rounded-2xl border-2 bg-surface p-5 shadow-sm transition-colors duration-500 sm:p-6 ${
-          rarity ? FRAME_BORDER[rarity] : "border-line"
-        }`}
-      >
-        {children}
-      </section>
+      <section className="relative rounded-md border-2 border-fg bg-surface p-4 sm:p-5">{children}</section>
     </div>
   );
 }
@@ -62,7 +63,7 @@ export function RarityFrame({ rarity, children }: { rarity: Rarity | null; child
 export function RarityChip({ topPercent, className = "" }: { topPercent: number; className?: string }) {
   const r = rarityOf(topPercent);
   return (
-    <Chip className={`shrink-0 border border-current/30 bg-current/10 tracking-wide uppercase ${RARITY_TEXT[r.id]} ${className}`}>
+    <Chip className={`shrink-0 border-2 border-current bg-surface tracking-wide uppercase ${RARITY_TEXT[r.id]} ${className}`}>
       {isSpecial(r.id) && <Sparkles className="size-3" aria-hidden />}
       {r.label} · {fmtTopPercent(topPercent)}
     </Chip>
@@ -73,22 +74,22 @@ export function TierChip({ finalRank, className = "" }: { finalRank: number; cla
   const tier = rankTier(finalRank);
   if (!tier) return null;
   return (
-    <Chip className={`bg-current/10 uppercase ${RARITY_TEXT[tier.rarity]} ${className}`}>
+    <Chip className={`border border-current uppercase ${RARITY_TEXT[tier.rarity]} ${className}`}>
       {finalRank === 1 && <Crown className="size-3" aria-hidden />}
       {tier.label}
     </Chip>
   );
 }
 
-/** The season year in the display face, plus the live-season note. */
+/** The season year on a blue pennant, plus the live-season note. */
 export function SeasonLabel({ season: s, year }: { season: PlayerSeason; year?: ReactNode }) {
   return (
-    <span className="font-display text-lg font-bold tracking-wider text-accent-text">
-      {year ?? s.year}
+    <span>
+      <span className="inline-block -skew-x-6 rounded-[3px] bg-blue px-2 pt-0.5 font-display text-lg leading-snug tracking-wider text-gold">
+        <span className="inline-block skew-x-6">{year ?? s.year}</span>
+      </span>
       {s.live && year === undefined && (
-        <span className="block font-sans text-xs font-medium tracking-normal text-muted sm:ml-2 sm:inline sm:align-middle">
-          live season · ranked as of {fmtYmd(s.dataAsOf)}
-        </span>
+        <span className="mt-1 block text-xs font-medium text-muted">live season · ranked as of {fmtYmd(s.dataAsOf)}</span>
       )}
     </span>
   );
@@ -97,8 +98,8 @@ export function SeasonLabel({ season: s, year }: { season: PlayerSeason; year?: 
 /** Rank, country, record and titles under the player's name. */
 export function PlayerFacts({ season: s, tierClass }: { season: PlayerSeason; tierClass?: string }) {
   return (
-    <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
-      <span className="font-semibold text-fg">#{s.ranking.final}</span>
+    <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-sm text-muted">
+      <span className="font-bold text-fg">#{s.ranking.final}</span>
       <span aria-hidden>·</span>
       <span>
         <span className="mr-1" aria-hidden>
@@ -120,7 +121,7 @@ export function PlayerFacts({ season: s, tierClass }: { season: PlayerSeason; ti
 }
 
 export function PlayerName({ children }: { children: ReactNode }) {
-  return <h2 className="font-display text-3xl leading-tight font-bold uppercase sm:text-4xl">{children}</h2>;
+  return <h2 className="mt-2 font-display text-3xl leading-[1.05] uppercase sm:text-4xl">{children}</h2>;
 }
 
 export function BadgeRow({ badge, className = "" }: { badge: EarnedBadge; className?: string }) {
@@ -128,7 +129,7 @@ export function BadgeRow({ badge, className = "" }: { badge: EarnedBadge; classN
   return (
     <li data-flip={badge.id} className={`flex items-center gap-3 py-2.5 ${className}`}>
       <span
-        className={`w-20 shrink-0 rounded-md px-1.5 py-0.5 text-center text-[11px] font-semibold tracking-wide uppercase ${CATEGORY_STYLES[badge.category]}`}
+        className={`w-20 shrink-0 -rotate-2 rounded-[3px] border-2 px-1 py-px text-center text-[10px] font-extrabold tracking-wider uppercase ${CATEGORY_STYLES[badge.category]}`}
       >
         {badge.category}
       </span>
@@ -137,7 +138,7 @@ export function BadgeRow({ badge, className = "" }: { badge: EarnedBadge; classN
         <span className="block truncate text-sm text-muted">{badge.detail}</span>
       </span>
       <span
-        className={`tabular shrink-0 font-mono font-semibold ${isMult ? "rounded-md bg-accent px-2 py-0.5 text-accent-ink" : ""}`}
+        className={`tabular shrink-0 font-mono font-bold ${isMult ? "rounded-[4px] border-2 border-fg bg-gold px-2 py-0.5 text-[#1f2233]" : ""}`}
       >
         {isMult ? fmtMult(badge.multiplier!) : `+${fmtScore(badge.points)}`}
       </span>
@@ -146,7 +147,11 @@ export function BadgeRow({ badge, className = "" }: { badge: EarnedBadge; classN
 }
 
 function SectionLabel({ children }: { children: ReactNode }) {
-  return <p className="mb-1 text-[11px] font-semibold tracking-[0.16em] text-subtle uppercase">{children}</p>;
+  return (
+    <p className="mb-1 flex items-center gap-2 text-[11px] font-extrabold tracking-[0.16em] text-subtle uppercase after:h-0 after:flex-1 after:border-t-2 after:border-dotted after:border-line">
+      {children}
+    </p>
+  );
 }
 
 /** Multipliers, then points, each biggest first. */
@@ -166,7 +171,7 @@ export function BadgeSections({
       {multipliers.length > 0 && (
         <div data-flip="section-multipliers">
           <SectionLabel>Multipliers</SectionLabel>
-          <ul className="divide-y divide-line/70">
+          <ul className="divide-y divide-dashed divide-line">
             {multipliers.map((b) => (
               <BadgeRow key={b.id} badge={b} className={rowClass} />
             ))}
@@ -176,7 +181,7 @@ export function BadgeSections({
       {points.length > 0 && (
         <div data-flip="section-points">
           <SectionLabel>Points</SectionLabel>
-          <ul className="divide-y divide-line/70">
+          <ul className="divide-y divide-dashed divide-line">
             {points.map((b) => (
               <BadgeRow key={b.id} badge={b} className={rowClass} />
             ))}
@@ -187,7 +192,10 @@ export function BadgeSections({
   );
 }
 
-/** The base × multiplier = score panel, styled like a scoreboard. */
+/**
+ * The base × multiplier = score panel: a blue box like a card's stat
+ * block. Base × mult on one line, the score (up to 11 characters) below.
+ */
 export function Scoreboard({
   base,
   multiplier,
@@ -200,31 +208,28 @@ export function Scoreboard({
   /** False while a reveal is still counting. */
   final?: boolean;
 }) {
-  const label = "text-[10px] font-semibold tracking-[0.18em] text-panel-fg/60 uppercase";
+  const label = "text-[10px] font-extrabold tracking-[0.18em] text-panel-fg/65 uppercase";
   return (
-    // Phones: base × mult on one line, the score on its own line below (a
-    // great season's score is 11 characters). From sm up, all on one line.
-    <dl className="mt-5 flex flex-col gap-2 rounded-xl bg-panel px-4 py-3 text-panel-fg sm:flex-row sm:items-center sm:gap-4">
+    <dl className="mt-4 flex flex-col gap-1.5 rounded-md border-2 border-fg bg-panel px-4 py-3 text-panel-fg">
       <div className="flex items-center gap-4">
         <div>
           <dt className={label}>Base</dt>
-          <dd className="tabular font-mono text-lg">{fmtScore(base)}</dd>
+          <dd className="tabular font-mono text-lg font-bold">{fmtScore(base)}</dd>
         </div>
-        <span className="text-panel-fg/40" aria-hidden>
+        <span className="text-panel-fg/50" aria-hidden>
           ×
         </span>
         <div>
           <dt className={label}>Mult</dt>
-          <dd className="tabular font-mono text-lg">{fmtMult(multiplier).slice(1)}</dd>
+          <dd className="tabular font-mono text-lg font-bold">{fmtMult(multiplier).slice(1)}</dd>
         </div>
       </div>
-      <span className="ml-auto hidden h-10 w-px shrink-0 bg-panel-fg/15 sm:block" aria-hidden />
-      <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 border-t border-panel-fg/15 pt-2 sm:block sm:border-0 sm:pt-0 sm:text-right">
+      <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 border-t-2 border-dotted border-panel-fg/25 pt-1.5">
         <dt className={label}>Score</dt>
         <dd
           data-score
-          className={`tabular min-w-0 font-mono text-2xl font-bold break-all transition-[color,text-shadow] duration-500 sm:text-3xl ${
-            final ? "text-[#d4f53c] [text-shadow:0_0_18px_rgb(212_245_60/0.45)]" : ""
+          className={`tabular min-w-0 font-display text-3xl break-all transition-colors duration-500 ${
+            final ? "text-gold [text-shadow:2px_2px_0_rgb(0_0_0/0.35)]" : ""
           }`}
         >
           {fmtScore(total)}
@@ -234,26 +239,66 @@ export function Scoreboard({
   );
 }
 
-/** A rolled player-season with its badges and score. */
+/**
+ * The front of the card: photo window on the left (on top on phones), the
+ * season, name, facts and scoreboard beside it. The reveal fills the slots
+ * with its reels.
+ */
+export function CardFront({
+  photo,
+  label,
+  chip,
+  name,
+  facts,
+  scoreboard,
+}: {
+  photo: ReactNode;
+  label: ReactNode;
+  chip?: ReactNode;
+  name: ReactNode;
+  facts: ReactNode;
+  scoreboard: ReactNode;
+}) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-[13rem_1fr] sm:gap-5">
+      {photo}
+      <div className="flex min-w-0 flex-col">
+        <div className="flex items-start justify-between gap-3">
+          {label}
+          {chip}
+        </div>
+        {name}
+        {facts}
+        <div className="mt-auto">{scoreboard}</div>
+      </div>
+    </div>
+  );
+}
+
+/** A rolled player-season as a trading card: photo, name, score and badges. */
 export function RollCard({
   season: s,
   score,
   topPercent,
+  photo,
 }: {
   season: PlayerSeason;
   score: ScoreResult;
   /** Share of all seasons scoring at least this much; shows the rarity. */
   topPercent?: number;
+  /** The season's photo; null shows the default card art. */
+  photo: SeasonPhoto | null;
 }) {
   return (
     <RarityFrame rarity={topPercent === undefined ? null : rarityOf(topPercent).id}>
-      <div className="flex items-start justify-between gap-3">
-        <SeasonLabel season={s} />
-        {topPercent !== undefined && <RarityChip topPercent={topPercent} />}
-      </div>
-      <PlayerName>{s.name}</PlayerName>
-      <PlayerFacts season={s} />
-      <Scoreboard base={score.base} multiplier={score.multiplier} total={score.total} />
+      <CardFront
+        photo={<CardPhoto photo={photo} name={s.name} />}
+        label={<SeasonLabel season={s} />}
+        chip={topPercent !== undefined && <RarityChip topPercent={topPercent} />}
+        name={<PlayerName>{s.name}</PlayerName>}
+        facts={<PlayerFacts season={s} />}
+        scoreboard={<Scoreboard base={score.base} multiplier={score.multiplier} total={score.total} />}
+      />
       <BadgeSections badges={score.badges} />
     </RarityFrame>
   );

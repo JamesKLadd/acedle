@@ -53,7 +53,7 @@ async function Badges() {
                 return (
                   <li
                     key={b.id}
-                    className={`flex gap-3 rounded-xl border p-3 ${
+                    className={`flex gap-3 rounded-md border-2 p-3 ${
                       earned ? "border-line bg-surface" : "border-dashed border-line bg-transparent"
                     }`}
                   >

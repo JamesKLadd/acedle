@@ -30,7 +30,7 @@ export async function ProfileHeader() {
       <div className="flex items-center gap-4">
         <Avatar src={profile?.avatar_url} name={name} size={64} />
         <div className="min-w-0">
-          <h1 className="truncate font-display text-4xl font-bold tracking-tight uppercase">{name}</h1>
+          <h1 className="font-display text-2xl leading-tight break-words uppercase min-[400px]:text-3xl sm:text-4xl">{name}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
             {profile ? (
               <span>Joined {fmtDate(profile.created_at.slice(0, 10))}</span>
@@ -78,7 +78,7 @@ export function ProfileHeaderSkeleton() {
       </div>
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="h-16 animate-pulse rounded-xl bg-surface-2" />
+          <div key={i} className="h-16 animate-pulse rounded-md bg-surface-2" />
         ))}
       </div>
     </div>

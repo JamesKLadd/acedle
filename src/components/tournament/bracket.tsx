@@ -62,7 +62,7 @@ function MatchBox({ setup, state, m }: { setup: TournamentSetup; state: Tourname
   const yours = m.sets !== null;
   return (
     <div
-      className={`overflow-hidden rounded-lg border bg-surface ${yours ? "border-accent/70" : "border-line"} divide-y divide-line/70`}
+      className={`overflow-hidden rounded-md border-2 bg-surface ${yours ? "border-accent/70" : "border-line"} divide-y divide-line/70`}
     >
       <Row
         setup={setup}
@@ -105,7 +105,7 @@ export function Bracket({ setup, state }: { setup: TournamentSetup; state: Tourn
           <p className="mb-2 text-center text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">Champion</p>
           <div className="flex flex-1 flex-col justify-around">
             <div
-              className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-3 text-center text-xs ${
+              className={`flex flex-col items-center gap-1 rounded-md border-2 px-2 py-3 text-center text-xs ${
                 champion === setup.you ? "border-legendary/70 bg-legendary/10" : "border-line bg-surface"
               }`}
             >

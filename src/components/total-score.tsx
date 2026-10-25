@@ -72,7 +72,7 @@ export function TotalScore({
     const fly = document.createElement("span");
     fly.textContent = `+${fmtScore(adding)}`;
     fly.className =
-      "tabular pointer-events-none fixed z-50 rounded-full bg-panel px-3 py-1 font-mono text-xl font-bold text-[#d4f53c] shadow-lg";
+      "tabular pointer-events-none fixed z-50 rounded-md border-2 border-[#1f2233] bg-panel px-3 py-1 font-display text-xl text-gold shadow-lg";
     fly.style.left = `${a.left}px`;
     fly.style.top = `${a.top}px`;
     document.body.append(fly);
@@ -100,15 +100,15 @@ export function TotalScore({
 
   const counting = adding !== null;
   return (
-    // top-[57px]: the site header's height.
+    // top-[61px]: below the site header and its stripe.
     <div
-      className={`${sticky ? "sticky top-[57px] z-20 shadow-md" : ""} flex items-center gap-4 rounded-2xl bg-panel px-4 py-3 text-panel-fg`}
+      className={`${sticky ? "sticky top-[61px] z-20 shadow-md" : ""} flex items-center gap-4 rounded-md border-2 border-fg bg-panel px-4 py-3 text-panel-fg`}
     >
       <div className="min-w-0">
-        <p className="text-[10px] font-semibold tracking-[0.18em] text-panel-fg/60 uppercase">Total score</p>
+        <p className="text-[10px] font-extrabold tracking-[0.18em] text-panel-fg/65 uppercase">Total score</p>
         <p
           ref={valueRef}
-          className={`tabular font-mono text-2xl font-bold break-all text-[#d4f53c] ${phase === "landed" ? "animate-pop" : ""}`}
+          className={`tabular font-display text-2xl break-all text-gold [text-shadow:2px_2px_0_rgb(0_0_0/0.35)] ${phase === "landed" ? "animate-pop" : ""}`}
         >
           {fmtScore(counting ? shown : total)}
         </p>
@@ -116,7 +116,7 @@ export function TotalScore({
       <p className="ml-auto shrink-0 text-right text-xs text-panel-fg/60">
         {counting ? (
           <span
-            className={`font-mono text-sm font-bold text-[#d4f53c] ${phase === "flying" ? "opacity-0" : "animate-pop"}`}
+            className={`font-mono text-sm font-bold text-gold ${phase === "flying" ? "opacity-0" : "animate-pop"}`}
           >
             +{fmtScore(adding)}
           </span>

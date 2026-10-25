@@ -6,13 +6,13 @@ const nextConfig: NextConfig = {
   // Season data is read from disk at request time; make sure deployments ship it.
   outputFileTracingIncludes: {
     // The daily roll runs in the home page's Server Action.
-    "/": ["./data/seasons/**"],
+    "/": ["./data/seasons/**", "./data/photos.json"],
     // The player-dex counts every rollable player; roll pages rank a score
     // against every season.
     "/profile/**": ["./data/seasons/**"],
     // Roll pages and their preview images; the images also read the fonts.
-    "/rolls/**": ["./data/seasons/**", "./assets/fonts/*.ttf"],
-    "/api/**": ["./data/seasons/**"],
+    "/rolls/**": ["./data/seasons/**", "./data/photos.json", "./assets/fonts/*.ttf"],
+    "/api/**": ["./data/seasons/**", "./data/photos.json"],
     // Link preview images (src/lib/og.tsx).
     "/opengraph-image": ["./assets/fonts/*.ttf"],
     "/leaderboard/**": ["./assets/fonts/*.ttf"],

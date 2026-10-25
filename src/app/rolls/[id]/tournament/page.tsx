@@ -16,7 +16,7 @@ export const metadata: Metadata = { title: "Tournament · Acedle" };
 export default function TournamentPage({ params }: PageProps<"/rolls/[id]/tournament">) {
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-10">
-      <Suspense fallback={<div className="h-96 animate-pulse rounded-xl bg-surface-2" />}>
+      <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-surface-2" />}>
         <TournamentDetail params={params} />
       </Suspense>
     </main>

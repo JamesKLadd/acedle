@@ -48,7 +48,7 @@ export function ShareButton({ text, path }: { text: string; path: string }) {
         popover="auto"
         role="dialog"
         aria-labelledby={`${id}-title`}
-        className="m-auto w-[min(26rem,calc(100vw-2rem))] animate-pop rounded-2xl border border-line bg-surface p-5 text-fg shadow-2xl backdrop:bg-black/50 backdrop:backdrop-blur-[2px]"
+        className="m-auto w-[min(26rem,calc(100vw-2rem))] animate-pop rounded-lg border-2 border-fg bg-surface p-5 text-fg shadow-[6px_6px_0_0_var(--blue)] backdrop:bg-black/50 backdrop:backdrop-blur-[2px]"
       >
         <div className="flex items-center justify-between gap-3">
           <h2 id={`${id}-title`} className="font-display text-xl font-bold tracking-wide uppercase">
@@ -63,7 +63,7 @@ export function ShareButton({ text, path }: { text: string; path: string }) {
             <X className="size-4" aria-hidden />
           </button>
         </div>
-        <pre className="mt-3 rounded-xl bg-surface-2 p-3 font-mono text-[13px] leading-relaxed break-words whitespace-pre-wrap select-all">
+        <pre className="mt-3 rounded-md border-2 border-dashed border-line bg-surface-2 p-3 font-mono text-[13px] leading-relaxed break-words whitespace-pre-wrap select-all">
           {full}
         </pre>
         <div className="mt-4 flex flex-wrap items-center gap-2">

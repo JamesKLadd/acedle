@@ -92,5 +92,9 @@ and the current ranking list from [Tennis Abstract](https://www.tennisabstract.c
 Acedle is a non-commercial fan project and isn't affiliated with the ATP Tour.
 
 The link preview images (`opengraph-image.tsx` files, styled in `src/lib/og.tsx`)
-use Barlow Condensed from `assets/fonts/`, under the SIL Open Font License
-(`assets/fonts/OFL.txt`).
+use Alfa Slab One and Courier Prime from `assets/fonts/`, under the SIL Open
+Font License (`assets/fonts/OFL-*.txt`).
+
+Player photos come from [Wikimedia Commons](https://commons.wikimedia.org/)
+(`npm run data:photos`, also run monthly by `.github/workflows/photos.yml`);
+each card credits its photo's author and license.

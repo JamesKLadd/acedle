@@ -75,7 +75,7 @@ export function BoardList({ children }: { children: ReactNode }) {
 export function BoardRow({ entry }: { entry: BoardEntry }) {
   return (
     <li
-      className={`grid grid-cols-[2rem_auto_1fr_auto] items-center gap-3 rounded-xl px-3 py-2 ${
+      className={`grid grid-cols-[2rem_auto_1fr_auto] items-center gap-3 rounded-md px-3 py-2 ${
         entry.isViewer ? "bg-accent-soft ring-1 ring-accent/60" : "hover:bg-surface-2/60"
       }`}
     >
@@ -116,7 +116,7 @@ export function Podium({ entries }: { entries: readonly BoardEntry[] }) {
       {order.map((e) => (
         <li
           key={e.key}
-          className={`relative flex items-center gap-3 rounded-2xl border bg-surface px-4 py-3 shadow-sm sm:w-[calc((100%-1.5rem)/3)] sm:flex-col sm:gap-0 sm:px-3 sm:pt-5 sm:pb-4 sm:text-center ${
+          className={`relative flex items-center gap-3 rounded-lg border-2 bg-surface px-4 py-3 shadow-[4px_4px_0_0_var(--line)] sm:w-[calc((100%-1.5rem)/3)] sm:flex-col sm:gap-0 sm:px-3 sm:pt-5 sm:pb-4 sm:text-center ${
             e.rank === 1 ? "border-legendary/60" : "border-line"
           } ${e.isViewer ? "ring-2 ring-accent" : ""} ${PODIUM_HEIGHT[e.rank] ?? ""} ${
             e === first ? "order-first sm:order-none" : ""
@@ -142,7 +142,7 @@ export function Podium({ entries }: { entries: readonly BoardEntry[] }) {
 
 /** Podium for the top three, rows for the rest, then the viewer's rows below a gap. */
 export function Board({ top, below, empty }: { top: readonly BoardEntry[]; below: readonly BoardEntry[]; empty: ReactNode }) {
-  if (top.length === 0) return <p className="rounded-2xl border border-dashed border-line py-12 text-center text-muted">{empty}</p>;
+  if (top.length === 0) return <p className="rounded-lg border-2 border-dashed border-line py-12 text-center text-muted">{empty}</p>;
   return (
     <>
       <Podium entries={top.slice(0, 3)} />
@@ -202,11 +202,11 @@ export function BoardSkeleton() {
     <div className="flex flex-col gap-3" aria-busy>
       <div className="grid gap-3 sm:grid-cols-3">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="h-16 animate-pulse rounded-2xl bg-surface-2 sm:h-40" />
+          <div key={i} className="h-16 animate-pulse rounded-lg bg-surface-2 sm:h-40" />
         ))}
       </div>
       {Array.from({ length: 6 }, (_, i) => (
-        <div key={i} className="h-12 animate-pulse rounded-xl bg-surface-2" />
+        <div key={i} className="h-12 animate-pulse rounded-md bg-surface-2" />
       ))}
     </div>
   );

@@ -24,7 +24,7 @@ async function History() {
   const rolls = await getMyRolls();
   if (rolls.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-line py-12 text-center">
+      <div className="rounded-lg border-2 border-dashed border-line py-12 text-center">
         <p className="text-muted">No rolls yet.</p>
         <Link href="/" className={`${buttonClass()} mt-4`}>
           Roll today&apos;s season
@@ -39,7 +39,7 @@ async function History() {
         <li key={r.id}>
           <Link
             href={`/rolls/${r.id}`}
-            className={`group grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-xl border bg-surface px-4 py-3 transition hover:border-accent/60 ${
+            className={`group grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-md border-2 bg-surface px-4 py-3 shadow-[3px_3px_0_0_var(--line)] transition hover:border-accent/60 ${
               r.id === best?.id && rolls.length > 1 ? "border-legendary/50" : "border-line"
             }`}
           >

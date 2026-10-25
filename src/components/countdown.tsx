@@ -56,11 +56,11 @@ export function NextRollPill() {
     return (
       <Link
         href="/"
-        className="hidden h-8 items-center gap-1.5 rounded-full bg-accent px-3 text-xs font-bold whitespace-nowrap text-accent-ink shadow-sm hover:brightness-105 sm:flex"
+        className="hidden h-8 items-center gap-1.5 rounded-md border-2 border-fg bg-gold px-2.5 text-xs font-bold tracking-wide whitespace-nowrap text-fg uppercase shadow-[2px_2px_0_0_var(--fg)] hover:brightness-105 sm:flex dark:text-[#1f2233]"
       >
         <span className="relative flex size-2">
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent-ink/50 motion-reduce:hidden" />
-          <span className="relative inline-flex size-2 rounded-full bg-accent-ink" />
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent/60 motion-reduce:hidden" />
+          <span className="relative inline-flex size-2 rounded-full bg-accent" />
         </span>
         Roll ready
       </Link>
@@ -68,7 +68,7 @@ export function NextRollPill() {
   }
   return (
     <span
-      className="hidden h-8 items-center gap-1.5 rounded-full border border-line px-3 text-xs text-muted sm:flex"
+      className="hidden h-8 items-center gap-1.5 rounded-md border-2 border-line px-2.5 text-xs text-muted sm:flex"
       title="Next roll (midnight UTC)"
     >
       <Timer className="size-3.5" aria-hidden />
@@ -82,9 +82,9 @@ export function RollReadyDot() {
   const state = useRollReady();
   if (!state?.ready) return null;
   return (
-    <span className="absolute top-0 left-4.5 flex size-2.5 sm:hidden">
-      <span className="absolute inline-flex size-full animate-ping rounded-full bg-cat-surface/60 motion-reduce:hidden" />
-      <span className="relative inline-flex size-2.5 rounded-full bg-cat-surface ring-2 ring-bg" />
+    <span className="absolute -top-0.5 -right-1.5 flex size-3 sm:hidden">
+      <span className="absolute inline-flex size-full animate-ping rounded-full bg-gold/70 motion-reduce:hidden" />
+      <span className="relative inline-flex size-3 rounded-full border-2 border-fg bg-gold" />
       <span className="sr-only">(today&apos;s roll is ready)</span>
     </span>
   );

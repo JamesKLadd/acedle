@@ -3,6 +3,8 @@
 import { refresh } from "next/cache";
 
 import { loadSeasons } from "@/lib/data/seasons";
+import { seasonPhoto } from "@/lib/photos";
+import type { SeasonPhoto } from "@/lib/photos-types";
 import { decoyNames } from "@/lib/roll";
 import { rollForToday, type DailyRoll } from "@/lib/roll/daily";
 import { supabaseRollStore } from "@/lib/roll/store";
@@ -18,6 +20,7 @@ export type RollTodayResult =
       /** Other players from the season, for the reveal's name reel. */
       decoys: string[];
       topPercent: number;
+      photo: SeasonPhoto | null;
     }
   | { ok: false; error: string };
 
@@ -41,6 +44,7 @@ export async function rollToday(): Promise<RollTodayResult> {
       created,
       decoys: decoyNames(loadSeasons(), roll.season),
       topPercent: topPercent(roll.score.total),
+      photo: seasonPhoto(roll.season.playerId, roll.season.year),
     };
   } catch (e) {
     console.error(e);

@@ -27,8 +27,8 @@ export function NavLinks({ pathname }: { pathname: string | null }) {
             href={href}
             aria-current={active ? "page" : undefined}
             title={label}
-            className={`flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium transition ${
-              active ? "bg-accent-soft text-accent-text" : "text-muted hover:bg-surface-2 hover:text-fg"
+            className={`flex h-9 items-center gap-1.5 rounded-md px-2.5 text-xs font-bold tracking-wider uppercase transition ${
+              active ? "bg-fg text-surface" : "text-muted hover:bg-surface-2 hover:text-fg"
             }`}
           >
             <Icon className="size-4" aria-hidden />

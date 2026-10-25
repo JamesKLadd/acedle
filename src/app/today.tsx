@@ -14,6 +14,7 @@ import type { SignInNotice } from "@/lib/auth/sign-in";
 import { getViewer } from "@/lib/auth/viewer";
 import { fmtShortDay } from "@/lib/format";
 import { getRollBoard } from "@/lib/leaderboard";
+import { seasonPhoto } from "@/lib/photos";
 import { toDailyRoll, utcDay } from "@/lib/roll/daily";
 import { supabaseRollStore } from "@/lib/roll/store";
 import { topPercent } from "@/lib/scoring/distribution";
@@ -110,7 +111,12 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
             <Eyebrow>Today&apos;s roll · {fmtShortDay(day)}</Eyebrow>
             <StreakChip streak={streak} />
           </div>
-          <RollCard season={roll.season} score={roll.score} topPercent={top} />
+          <RollCard
+            season={roll.season}
+            score={roll.score}
+            topPercent={top}
+            photo={seasonPhoto(roll.season.playerId, roll.season.year)}
+          />
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <ShareButton
               text={shareText({ ...roll, topPercent: top, tournament: tournament?.roundsWon })}
@@ -125,7 +131,7 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
           <div className="mt-4">
             <TournamentLink rollId={roll.id} tournament={tournament} isOwner />
           </div>
-          <div className="mt-4 flex items-center gap-2 rounded-xl border border-line bg-surface px-4 py-3 text-sm text-muted">
+          <div className="mt-4 flex items-center gap-2 rounded-md border-2 border-line bg-surface shadow-[3px_3px_0_0_var(--line)] px-4 py-3 text-sm text-muted">
             <Timer className="size-4 shrink-0 text-accent-text" aria-hidden />
             <NextRollCountdown />
           </div>
@@ -176,7 +182,7 @@ function StreakChip({ streak }: { streak: number }) {
 function SignInPrompt({ providers, guest }: { providers: readonly OAuthProvider[]; guest: boolean }) {
   if (providers.length === 0) return null;
   return (
-    <div className="rounded-2xl border border-line bg-surface p-5">
+    <div className="rounded-lg border-2 border-line bg-surface shadow-[4px_4px_0_0_var(--line)] p-5">
       <p className="font-display text-lg font-bold tracking-wide uppercase">
         {guest ? "You're playing as a guest" : "Keep your rolls"}
       </p>
@@ -191,8 +197,8 @@ function SignInPrompt({ providers, guest }: { providers: readonly OAuthProvider[
 export function TodaySkeleton() {
   return (
     <div className="flex flex-col gap-3" aria-busy>
-      <div className="h-14 w-72 animate-pulse rounded-2xl bg-surface-2" />
-      <div className="h-32 animate-pulse rounded-2xl bg-surface-2" />
+      <div className="h-14 w-72 animate-pulse rounded-lg bg-surface-2" />
+      <div className="h-32 animate-pulse rounded-lg bg-surface-2" />
     </div>
   );
 }

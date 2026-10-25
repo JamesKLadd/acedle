@@ -75,7 +75,7 @@ export function SandboxClient() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl border border-line bg-surface p-4">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-lg border-2 border-line bg-surface shadow-[4px_4px_0_0_var(--line)] p-4">
         <button onClick={roll} disabled={loading} className={buttonClass({ size: "lg" })}>
           <Dices className={`size-5 ${loading ? "animate-spin" : ""}`} aria-hidden />
           {loading ? "Rolling…" : result ? "Roll again" : "Roll"}
@@ -108,6 +108,7 @@ export function SandboxClient() {
           score={result.score}
           decoys={result.decoys}
           topPercent={result.topPercent}
+          photo={result.photo}
           onDone={() => setRevealing(false)}
         />
       )}
@@ -116,7 +117,7 @@ export function SandboxClient() {
         <button
           onClick={enterTournament}
           disabled={drawing}
-          className="group flex items-center gap-4 rounded-2xl border border-line bg-surface px-5 py-4 text-left transition hover:border-accent/60 disabled:opacity-60"
+          className="group flex items-center gap-4 rounded-lg border-2 border-line bg-surface shadow-[4px_4px_0_0_var(--line)] px-5 py-4 text-left transition hover:border-accent/60 disabled:opacity-60"
         >
           <Trophy className="size-7 shrink-0 text-accent-text" aria-hidden />
           <span className="min-w-0 flex-1">

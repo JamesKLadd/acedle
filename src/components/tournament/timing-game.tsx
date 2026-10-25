@@ -93,7 +93,7 @@ export function TimingGame({ chance, onResult }: { chance: number; onResult: (wo
       role="button"
       tabIndex={-1}
       aria-label="Tap when the ball is in the green zone"
-      className={`relative cursor-pointer touch-manipulation rounded-2xl bg-panel px-4 py-6 text-panel-fg select-none sm:px-6 ${
+      className={`relative cursor-pointer touch-manipulation rounded-lg border-2 border-fg bg-panel px-4 py-6 text-panel-fg select-none sm:px-6 ${
         phase === "out" ? "ring-2 ring-red-500/70" : phase === "in" ? "ring-2 ring-[#34c759]" : ""
       }`}
     >

@@ -3,14 +3,17 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { PlayerSeason } from "@/lib/data/types";
+import type { SeasonPhoto } from "@/lib/photos-types";
 import { FIRST_YEAR, LAST_YEAR } from "@/lib/data/years";
 import { isSpecial, rarityOf } from "@/lib/rarity";
 import { frameIndexAt, revealTimeline } from "@/lib/reveal";
 import type { ScoreResult } from "@/lib/scoring/types";
 import { sfx } from "@/lib/sound";
 
+import { CardPhoto } from "./card-photo";
 import {
   BadgeSections,
+  CardFront,
   PlayerFacts,
   PlayerName,
   RarityChip,
@@ -94,9 +97,10 @@ function useFlip(version: number) {
 }
 
 /**
- * Plays a roll: the year reel spins and lands, then the player reel, then the
- * badges add up (points first, then multipliers) into lists kept biggest
- * first. Ends looking like RollCard. Calls `onDone` once at the end (also
+ * Plays a roll: the card shows its back while the year reel spins and lands,
+ * then the player reel; when the player lands the card flips to their photo.
+ * Then the badges add up (points first, then multipliers) into lists kept
+ * biggest first. Ends looking like RollCard. Calls `onDone` once at the end (also
  * after Skip, or straight away with reduced motion).
  */
 export function RollReveal({
@@ -104,6 +108,7 @@ export function RollReveal({
   score,
   decoys,
   topPercent,
+  photo,
   onDone,
 }: {
   season: PlayerSeason;
@@ -111,6 +116,7 @@ export function RollReveal({
   /** Other players from the season, for the name reel. */
   decoys: readonly string[];
   topPercent: number;
+  photo: SeasonPhoto | null;
   onDone?: () => void;
 }) {
   const timeline = useMemo(() => revealTimeline(score), [score]);
@@ -214,44 +220,53 @@ export function RollReveal({
 
   return (
     <RarityFrame rarity={done ? rarity.id : null}>
-      <div className="flex items-start justify-between gap-3">
-        <SeasonLabel
-          season={season}
-          year={yearLanded ? undefined : <Reel items={years} progress={yearProgress} inline />}
-        />
-        {done ? (
-          <RarityChip topPercent={topPercent} className="animate-pop" />
-        ) : (
-          <button onClick={skip} className="text-xs font-medium text-muted underline underline-offset-4 hover:text-fg">
-            Skip <span className="hidden sm:inline">(Space)</span>
-          </button>
-        )}
-      </div>
-
-      <PlayerName>
-        {playerLanded ? (
-          season.name
-        ) : yearLanded ? (
-          <Reel items={names} progress={playerProgress} />
-        ) : (
-          <span className="text-subtle/50">Rolling…</span>
-        )}
-      </PlayerName>
-      {playerLanded ? (
-        <div className="animate-reveal">
-          <PlayerFacts season={season} tierClass="animate-pop" />
-        </div>
-      ) : (
-        <p className="mt-1 text-sm text-transparent" aria-hidden>
-          .
-        </p>
-      )}
-
-      <Scoreboard
-        base={Math.round(tween(prev.base, frame.base))}
-        multiplier={frame.multiplier}
-        total={Math.round(tween(prev.total, frame.total))}
-        final={done}
+      <CardFront
+        photo={<CardPhoto photo={photo} name={season.name} back={!playerLanded} />}
+        label={
+          <SeasonLabel
+            season={season}
+            year={yearLanded ? undefined : <Reel items={years} progress={yearProgress} inline />}
+          />
+        }
+        chip={
+          done ? (
+            <RarityChip topPercent={topPercent} className="animate-pop" />
+          ) : (
+            <button onClick={skip} className="text-xs font-bold text-muted uppercase underline underline-offset-4 hover:text-fg">
+              Skip <span className="hidden sm:inline">(Space)</span>
+            </button>
+          )
+        }
+        name={
+          <PlayerName>
+            {playerLanded ? (
+              season.name
+            ) : yearLanded ? (
+              <Reel items={names} progress={playerProgress} />
+            ) : (
+              <span className="text-subtle/50">Rolling…</span>
+            )}
+          </PlayerName>
+        }
+        facts={
+          playerLanded ? (
+            <div className="animate-reveal">
+              <PlayerFacts season={season} tierClass="animate-pop" />
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-transparent" aria-hidden>
+              .
+            </p>
+          )
+        }
+        scoreboard={
+          <Scoreboard
+            base={Math.round(tween(prev.base, frame.base))}
+            multiplier={frame.multiplier}
+            total={Math.round(tween(prev.total, frame.total))}
+            final={done}
+          />
+        }
       />
 
       <BadgeSections badges={timeline.badges.slice(0, frame.shown)} rowClass="animate-reveal" listRef={flipRef} />
