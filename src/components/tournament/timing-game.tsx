@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from "react";
 
 import { BallIcon } from "@/components/brand";
 import { sfx } from "@/lib/sound";
-import { gameParams } from "@/lib/tournament";
+import { gameParams, lineCall, type LineCall } from "@/lib/tournament";
+
+import { LineReview } from "./line-review";
 
 /** Delay before the ball starts moving. */
 const READY_MS = 700;
@@ -19,14 +21,16 @@ const bounce = (x: number) => {
 
 /**
  * One set of the timing game: a ball sweeps along the track and the player
- * taps (or presses Space) when it's in the green. `chance` (the player's
- * odds) sets the green zone's size and the ball's speed.
+ * taps (or presses Space) when it's in the green (its white lines count as
+ * in). `chance` (the player's odds) sets the green zone's size and the
+ * ball's speed. Taps right by a line go to the line review.
  */
 export function TimingGame({ chance, onResult }: { chance: number; onResult: (won: boolean) => void }) {
   const { zone, passMs } = gameParams(chance);
   // Placed after mount, so server and client render the same.
   const [center, setCenter] = useState<number | null>(null);
-  const [phase, setPhase] = useState<"ready" | "live" | "in" | "out">("ready");
+  const [phase, setPhase] = useState<"ready" | "live" | "review" | "in" | "out">("ready");
+  const [review, setReview] = useState<LineCall | null>(null);
   const ball = useRef<HTMLDivElement>(null);
   const start = useRef(0);
   const live = useRef(false);
@@ -60,12 +64,21 @@ export function TimingGame({ chance, onResult }: { chance: number; onResult: (wo
     if (!live.current || center === null) return;
     live.current = false;
     const pos = bounce(Math.max(0, at - start.current) / passMs);
-    const hit = Math.abs(pos - center) <= zone / 2;
+    const call = lineCall(pos, center, zone);
     if (ball.current) ball.current.style.left = `${pos * 100}%`;
+    if (call.close) {
+      setPhase("review");
+      setReview(call);
+      return;
+    }
+    announce(call.in);
+    window.setTimeout(() => result.current(call.in), CALL_MS);
+  }
+
+  function announce(hit: boolean) {
     setPhase(hit ? "in" : "out");
     if (hit) sfx.hit();
     else sfx.miss();
-    window.setTimeout(() => result.current(hit), CALL_MS);
   }
 
   // Space or Enter taps too.
@@ -84,7 +97,9 @@ export function TimingGame({ chance, onResult }: { chance: number; onResult: (wo
       ? "Ready…"
       : phase === "live"
         ? "Tap when the ball is in the green"
-        : phase === "in"
+        : phase === "review"
+          ? "Close call…"
+          : phase === "in"
           ? "In!"
           : "Out!";
   return (
@@ -99,7 +114,7 @@ export function TimingGame({ chance, onResult }: { chance: number; onResult: (wo
     >
       <p
         aria-live="polite"
-        className={`text-center font-display font-bold tracking-wide uppercase ${
+        className={`flex h-9 items-center justify-center text-center font-display font-bold tracking-wide uppercase ${
           phase === "in" || phase === "out" ? "animate-pop text-3xl" : "text-xs text-panel-fg/70 sm:text-sm"
         } ${phase === "in" ? "text-[#34c759]" : phase === "out" ? "text-red-400" : ""}`}
       >
@@ -108,8 +123,9 @@ export function TimingGame({ chance, onResult }: { chance: number; onResult: (wo
       <div className="relative mt-5 h-12 rounded-full bg-white/[0.07] ring-1 ring-white/10">
         <div className="absolute inset-y-0 right-5 left-5">
           {center !== null && (
+            // The lines sit inside the zone's edges: a ball on the line is in.
             <div
-              className={`absolute inset-y-1.5 rounded-md transition-colors ${
+              className={`absolute inset-y-1.5 border-x-[3px] border-white/90 transition-colors ${
                 phase === "out" ? "bg-[#34c759]/35" : "bg-[#34c759]/80"
               }`}
               style={{
@@ -125,6 +141,9 @@ export function TimingGame({ chance, onResult }: { chance: number; onResult: (wo
           </div>
         </div>
       </div>
+      {review && (
+        <LineReview call={review} onReveal={() => announce(review.in)} onDone={() => result.current(review.in)} />
+      )}
       <p className="mt-4 text-center text-xs text-panel-fg/50">
         Tap anywhere here, or press <kbd className="rounded border border-white/15 px-1 font-mono">Space</kbd>
       </p>

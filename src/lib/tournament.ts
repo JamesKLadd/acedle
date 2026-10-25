@@ -57,6 +57,36 @@ export function gameParams(chance: number) {
   return { zone: 0.07 + 0.33 * p, passMs: Math.round(450 + 1150 * p) };
 }
 
+/** How near the line (as a share of the track) a tap has to be for a line review. */
+export const CLOSE_CALL = 0.02;
+
+export interface LineCall {
+  /** The ball was in: on the green or its lines (lines are in, as in tennis). */
+  in: boolean;
+  /** The line it was nearest: the zone's left or right edge. */
+  side: "left" | "right";
+  /** Close enough to the line to show the line review. */
+  close: boolean;
+  /**
+   * For the review: how far the ball mark missed the line by (out), or how
+   * far it reached onto the line (in), 1–30 mm.
+   */
+  mm: number;
+}
+
+/** The call for a tap with the ball at `pos`, the green zone at `center` (all shares of the track). */
+export function lineCall(pos: number, center: number, zone: number): LineCall {
+  const margin = zone / 2 - Math.abs(pos - center);
+  // Narrow zones get a narrower band, so not every hit on them goes to review.
+  const band = Math.min(CLOSE_CALL, zone * 0.12);
+  return {
+    in: margin >= 0,
+    side: pos < center ? "left" : "right",
+    close: Math.abs(margin) <= band,
+    mm: Math.min(30, Math.max(1, Math.round((Math.abs(margin) / band) * 30))),
+  };
+}
+
 /**
  * Seeds the 16 entrants by score (ties keep their order) and places them in
  * the draw. `you` is the player's index in `pool`; returns it in the draw.

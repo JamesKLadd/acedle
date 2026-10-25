@@ -57,8 +57,8 @@ export default function AboutPage() {
         <p>
           After a roll you can take your player into a tournament: a 16-player draw of random player-seasons, seeded by
           score. Your odds in each match are your share of the two scores; you play your matches by tapping when the
-          ball is in the green (better odds give you a bigger zone and a slower ball), and the rest are decided by the
-          odds. One tournament per daily roll, just for bragging rights: it doesn&apos;t change your score.
+          ball is in the green (better odds give you a bigger zone and a slower ball; the lines count as in, and taps
+          right by a line go to a line review), and the rest are decided by the odds. One tournament per daily roll, just for bragging rights: it doesn&apos;t change your score.
         </p>
       </Section>
 

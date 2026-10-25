@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DRAW_SIZE, gameParams, matchRandom, seedDraw, tournamentState, winChance, type Entrant } from "./tournament";
+import { DRAW_SIZE, gameParams, lineCall, matchRandom, seedDraw, tournamentState, winChance, type Entrant } from "./tournament";
 
 const entrant = (i: number, score: number): Omit<Entrant, "seed"> => ({
   playerId: i,
@@ -31,6 +31,34 @@ describe("gameParams", () => {
     expect(fav.zone).toBeGreaterThan(dog.zone);
     expect(fav.passMs).toBeGreaterThan(dog.passMs);
     expect(gameParams(2)).toEqual(gameParams(1));
+  });
+});
+
+describe("lineCall", () => {
+  it("calls the ball in on the green and its lines, out past them", () => {
+    expect(lineCall(0.5, 0.5, 0.2)).toMatchObject({ in: true, close: false });
+    expect(lineCall(0.6, 0.5, 0.2)).toMatchObject({ in: true, side: "right", close: true });
+    expect(lineCall(0.4, 0.5, 0.2)).toMatchObject({ in: true, side: "left", close: true });
+    expect(lineCall(0.3, 0.5, 0.2)).toMatchObject({ in: false, side: "left", close: false });
+  });
+
+  it("reviews taps near the line, by how near", () => {
+    const justOut = lineCall(0.601, 0.5, 0.2);
+    expect(justOut).toMatchObject({ in: false, close: true });
+    expect(justOut.mm).toBeLessThanOrEqual(2);
+    const clipped = lineCall(0.599, 0.5, 0.2);
+    expect(clipped).toMatchObject({ in: true, close: true });
+    const wide = lineCall(0.619, 0.5, 0.2);
+    expect(wide).toMatchObject({ in: false, close: true });
+    expect(wide.mm).toBeGreaterThan(25);
+    expect(lineCall(0.625, 0.5, 0.2).close).toBe(false);
+  });
+
+  it("narrows the review band for narrow zones", () => {
+    // A 0.08 zone reviews within 0.0096 of the line, not 0.02.
+    expect(lineCall(0.5 + 0.04 + 0.009, 0.5, 0.08).close).toBe(true);
+    expect(lineCall(0.5 + 0.04 + 0.012, 0.5, 0.08).close).toBe(false);
+    expect(lineCall(0.5, 0.5, 0.08).close).toBe(false);
   });
 });
 
