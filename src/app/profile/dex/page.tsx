@@ -1,3 +1,5 @@
+import { ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { Suspense } from "react";
 
 import { BoardSkeleton } from "@/components/board";
@@ -60,18 +62,42 @@ async function Dex() {
           {dex.players.map((p) => (
             <li
               key={p.playerId}
-              className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-md border-2 border-line bg-surface shadow-[3px_3px_0_0_var(--line)] px-3 py-2.5"
+              className="group relative grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-md border-2 border-line bg-surface shadow-[3px_3px_0_0_var(--line)] px-3 py-2.5 transition hover:border-accent/60"
             >
               <span className="text-2xl leading-none" aria-hidden>
                 {flag(p.country)}
               </span>
               <span className="min-w-0">
-                <span className="block truncate font-semibold">{p.name}</span>
+                {/* The whole row opens the best card; the years open each season's. */}
+                <Link
+                  href={`/rolls/${p.bestRoll}?from=dex`}
+                  className="block truncate font-semibold after:absolute after:inset-0 after:rounded-md"
+                >
+                  {p.name}
+                </Link>
                 <span className="block truncate text-xs text-muted">
                   {p.country} · best finish #{p.bestRank}
                 </span>
               </span>
-              <span className="font-mono text-sm text-muted tabular-nums">{p.years.join(", ")}</span>
+              <span className="flex items-center gap-1">
+                {p.years.length > 1 ? (
+                  <span className="flex max-w-36 flex-wrap justify-end gap-1">
+                    {p.years.map((y) => (
+                      <Link
+                        key={y}
+                        href={`/rolls/${p.rolls[y]}?from=dex`}
+                        aria-label={`${p.name}, ${y}`}
+                        className="relative z-10 rounded-[4px] border border-line px-1 font-mono text-xs text-muted tabular-nums hover:border-accent hover:text-fg"
+                      >
+                        {y}
+                      </Link>
+                    ))}
+                  </span>
+                ) : (
+                  <span className="font-mono text-sm text-muted tabular-nums">{p.years[0]}</span>
+                )}
+                <ChevronRight className="size-4 shrink-0 text-subtle transition group-hover:translate-x-0.5" aria-hidden />
+              </span>
             </li>
           ))}
         </ul>

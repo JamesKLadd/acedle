@@ -89,6 +89,10 @@ export interface DexEntry {
   country: string;
   /** Seasons rolled, ascending. */
   years: number[];
+  /** The roll to show for each season rolled (its first), by year. */
+  rolls: Record<number, string>;
+  /** The best-scoring of those rolls. */
+  bestRoll: string;
   /** Best final rank across the rolled seasons. */
   bestRank: number;
 }
@@ -96,11 +100,28 @@ export interface DexEntry {
 /** Players the user has rolled, how many seasons, and rolls per year. */
 export function playerDex(rolls: readonly RollSummary[]) {
   const players = new Map<number, DexEntry>();
+  const bestScore = new Map<number, number>();
   const rollsPerYear = new Map<number, number>();
-  for (const r of rolls) {
+  // Oldest first, so each season shows its first roll.
+  for (const r of [...rolls].sort((a, b) => a.day.localeCompare(b.day))) {
     rollsPerYear.set(r.year, (rollsPerYear.get(r.year) ?? 0) + 1);
-    const p = players.get(r.playerId) ?? { playerId: r.playerId, name: r.playerName, country: r.country, years: [], bestRank: r.finalRank };
-    if (!p.years.includes(r.year)) p.years.push(r.year);
+    const p = players.get(r.playerId) ?? {
+      playerId: r.playerId,
+      name: r.playerName,
+      country: r.country,
+      years: [],
+      rolls: {},
+      bestRoll: r.id,
+      bestRank: r.finalRank,
+    };
+    if (!p.years.includes(r.year)) {
+      p.years.push(r.year);
+      p.rolls[r.year] = r.id;
+    }
+    if (r.score > (bestScore.get(r.playerId) ?? -1)) {
+      p.bestRoll = p.rolls[r.year];
+      bestScore.set(r.playerId, r.score);
+    }
     p.bestRank = Math.min(p.bestRank, r.finalRank);
     players.set(r.playerId, p);
   }

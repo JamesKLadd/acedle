@@ -73,6 +73,17 @@ describe("playerDex", () => {
     expect(dex.rollsPerYear.get(2015)).toBe(2);
     expect(dex.rollsPerYear.get(1990)).toBeUndefined();
   });
+
+  it("links each season to its first roll and the player to their best", () => {
+    const dex = playerDex([
+      roll({ id: "late", day: "2026-10-20", year: 2015, score: 500 }),
+      roll({ id: "early", day: "2026-10-01", year: 2015, score: 500 }),
+      roll({ id: "small", day: "2026-10-05", year: 2005, score: 20 }),
+    ]);
+    expect(dex.players[0].rolls).toEqual({ 2015: "early", 2005: "small" });
+    expect(dex.players[0].bestRoll).toBe("early");
+    expect(dex.players[0]).not.toHaveProperty("bestScore");
+  });
 });
 
 describe("poolTotals", () => {

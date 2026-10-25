@@ -24,19 +24,25 @@ export async function generateMetadata({ params }: PageProps<"/rolls/[id]">): Pr
   return { title: `${title} · Acedle`, description, openGraph: { title, description } };
 }
 
-export default function RollPage({ params }: PageProps<"/rolls/[id]">) {
+export default function RollPage({ params, searchParams }: PageProps<"/rolls/[id]">) {
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-10">
       <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-surface-2" />}>
-        <RollDetail params={params} />
+        <RollDetail params={params} searchParams={searchParams} />
       </Suspense>
     </main>
   );
 }
 
 /** Anyone with the link can see a roll; its owner also gets the share button. */
-async function RollDetail({ params }: { params: Promise<{ id: string }> }) {
-  const [{ id }, viewer] = await Promise.all([params, getViewer()]);
+async function RollDetail({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const [{ id }, { from }, viewer] = await Promise.all([params, searchParams, getViewer()]);
   const [shared, tournament] = await Promise.all([getSharedRoll(id), getTournament(id)]);
   if (!shared) notFound();
   const { roll, handle } = shared;
@@ -45,8 +51,8 @@ async function RollDetail({ params }: { params: Promise<{ id: string }> }) {
   return (
     <>
       {isOwner ? (
-        <Link href="/profile" className="text-sm text-muted hover:text-fg">
-          ← Roll history
+        <Link href={from === "dex" ? "/profile/dex" : "/profile"} className="text-sm text-muted hover:text-fg">
+          ← {from === "dex" ? "Player-dex" : "Roll history"}
         </Link>
       ) : (
         <p className="text-sm text-muted">
