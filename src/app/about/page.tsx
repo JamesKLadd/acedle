@@ -100,7 +100,11 @@ export default function AboutPage() {
           Player photos come from <A href="https://commons.wikimedia.org/">Wikimedia Commons</A>, freely licensed by
           their photographers; each card credits its photo&apos;s author and license and links to its Commons page.
           A photo from the same season is used where there is one, otherwise the nearest year&apos;s (the card says
-          which year). Players without one get a plain card.
+          which year). Players without one get illustrated art in their country&apos;s colors.
+        </p>
+        <p>
+          Know a better photo? Signed-in players can suggest any Commons photo with the link under a card. Each
+          suggestion is checked before it&apos;s used.
         </p>
         <p>
           On systems without flag emoji (like Windows), flags are drawn with{" "}
@@ -123,6 +127,10 @@ export default function AboutPage() {
           <li>
             Each roll has its own page. Its link is unlisted (a random id), but anyone you share it with can see the
             roll and your display name.
+          </li>
+          <li>
+            If you suggest a photo, it&apos;s stored with your account and your note until it&apos;s reviewed; only
+            the reviewer sees who suggested it. Approved photos stay on the cards.
           </li>
           <li>
             If you take a daily roll into a tournament, its draw and your set results are stored with the roll, and

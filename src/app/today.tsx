@@ -14,7 +14,7 @@ import type { SignInNotice } from "@/lib/auth/sign-in";
 import { getViewer } from "@/lib/auth/viewer";
 import { fmtShortDay } from "@/lib/format";
 import { getRollBoard } from "@/lib/leaderboard";
-import { seasonPhoto } from "@/lib/photos";
+import { getSeasonPhoto } from "@/lib/season-photo";
 import { toDailyRoll, utcDay } from "@/lib/roll/daily";
 import { supabaseRollStore } from "@/lib/roll/store";
 import { topPercent } from "@/lib/scoring/distribution";
@@ -115,7 +115,7 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
             season={roll.season}
             score={roll.score}
             topPercent={top}
-            photo={seasonPhoto(roll.season.playerId, roll.season.year)}
+            photo={await getSeasonPhoto(roll.season.playerId, roll.season.year)}
           />
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <ShareButton

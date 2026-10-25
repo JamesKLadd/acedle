@@ -1,13 +1,9 @@
 // Choosing a photo for each player-season from a player's Commons files.
 // Pure, so it's testable without the network (see photos.ts for the lookup).
 
-import type { Photo } from "../../src/lib/photos-types";
+import { plainText, yearIn, type Photo } from "../../src/lib/photos-types";
 
-/** A year in a category or file name ("Roger Federer at the 2007 US Open"). */
-export function yearIn(text: string): number | null {
-  const m = text.match(/(?<!\d)(19[6-9]\d|20[0-3]\d)(?!\d)/);
-  return m ? Number(m[1]) : null;
-}
+export { plainText, yearIn };
 
 /** Lower-case, accents dropped: "Đoković" → "dokovic". */
 export const fold = (s: string) =>
@@ -16,20 +12,6 @@ export const fold = (s: string) =>
     .replace(/[̀-ͯ]/g, "")
     .replace(/đ/gi, "d")
     .toLowerCase();
-
-/** Commons credits are HTML; keep the text. */
-export function plainText(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#0?39;/g, "'")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&[a-z]+;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 120);
-}
 
 /** Files that aren't a photo of the player (signatures, logos, statues…). */
 const NOT_A_PORTRAIT =

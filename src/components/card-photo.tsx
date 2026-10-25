@@ -1,16 +1,14 @@
 import Image from "next/image";
+import Link from "next/link";
 
+import type { PlayerSeason } from "@/lib/data/types";
 import { photoPage, type SeasonPhoto } from "@/lib/photos-types";
 
 import { Wordmark } from "./brand";
+import { PlayerArt } from "./player-art";
 
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+/** What the card needs to know about the season. */
+export type CardSeason = Pick<PlayerSeason, "playerId" | "name" | "year" | "hand" | "country">;
 
 /** The back of a card: blue stripes and the maker's mark. Shown before the reveal flips it. */
 export function CardBack() {
@@ -26,14 +24,15 @@ export function CardBack() {
   );
 }
 
-/** For players without a photo on Commons: their initials on a halftone print. */
-function DefaultArt({ name }: { name: string }) {
+/** For players without a photo: a pictogram in their colors, stamped with the season. */
+function DefaultArt({ season }: { season: CardSeason }) {
   return (
-    <div className="relative grid size-full place-items-center bg-surface-2 bg-[radial-gradient(var(--line)_1.4px,transparent_1.6px)] bg-[length:9px_9px]">
-      <span className="font-display text-4xl text-blue [text-shadow:3px_3px_0_var(--accent-soft)] sm:text-7xl">
-        {initials(name)}
+    <div className="relative size-full bg-surface-2 bg-[radial-gradient(var(--line)_1.4px,transparent_1.6px)] bg-[length:9px_9px]">
+      <PlayerArt hand={season.hand} country={season.country} className="size-full" />
+      <span className="absolute bottom-1 left-1 -rotate-6 rounded-[3px] border-2 border-fg bg-surface px-1 font-display text-xs leading-tight text-accent sm:bottom-2 sm:left-2 sm:px-1.5 sm:text-lg">
+        &rsquo;{String(season.year).slice(2)}
       </span>
-      <span className="absolute bottom-1.5 rounded-[3px] border border-line bg-surface px-1 text-[9px] font-bold tracking-wider whitespace-nowrap text-subtle uppercase sm:bottom-2 sm:px-1.5 sm:text-[10px]">
+      <span className="absolute right-1 bottom-1 rounded-[3px] border border-fg/40 bg-surface px-1 text-[9px] font-bold tracking-wider whitespace-nowrap text-muted uppercase sm:right-2 sm:bottom-2.5 sm:px-1.5 sm:text-[10px]">
         No photo<span className="hidden sm:inline"> on file</span>
       </span>
     </div>
@@ -47,13 +46,16 @@ function DefaultArt({ name }: { name: string }) {
  */
 export function CardPhoto({
   photo,
-  name,
+  season,
   back = false,
+  suggest = true,
   className = "",
 }: {
   photo: SeasonPhoto | null;
-  name: string;
+  season: CardSeason;
   back?: boolean;
+  /** Link to suggesting a (better) photo under the card. */
+  suggest?: boolean;
   className?: string;
 }) {
   const face = "absolute inset-0 overflow-hidden rounded-md border-2 border-fg [backface-visibility:hidden]";
@@ -69,7 +71,7 @@ export function CardPhoto({
             {photo ? (
               <Image
                 src={photo.thumb}
-                alt={`${name}${photo.year ? `, ${photo.year}` : ""}`}
+                alt={`${season.name}${photo.year ? `, ${photo.year}` : ""}`}
                 fill
                 unoptimized
                 sizes="(min-width: 640px) 13rem, 7.5rem"
@@ -77,14 +79,14 @@ export function CardPhoto({
                 style={{ objectPosition: "50% 22%" }}
               />
             ) : (
-              <DefaultArt name={name} />
+              <DefaultArt season={season} />
             )}
             {photo && (
               <span
                 aria-hidden
                 className="absolute right-1.5 bottom-0.5 -rotate-6 font-script text-sm leading-tight text-white [text-shadow:0_1px_3px_rgb(0_0_0/0.7)] sm:right-2 sm:bottom-1 sm:text-2xl"
               >
-                {name}
+                {season.name}
               </span>
             )}
           </div>
@@ -93,13 +95,25 @@ export function CardPhoto({
           </div>
         </div>
       </div>
-      {photo && !back && (
-        <figcaption className="mt-1 truncate text-[10px] leading-tight text-subtle">
-          {photo.sameSeason || !photo.year ? "Photo" : `Photo from ${photo.year}`}:{" "}
-          <a href={photoPage(photo)} target="_blank" rel="noreferrer" className="underline hover:text-fg">
-            {photo.author}
-          </a>
-          , {photo.license}
+      {!back && (photo || suggest) && (
+        <figcaption className="mt-1 flex gap-1 text-[10px] leading-tight text-subtle">
+          {photo && (
+            <span className="min-w-0 truncate">
+              {photo.sameSeason || !photo.year ? "Photo" : `Photo from ${photo.year}`}:{" "}
+              <a href={photoPage(photo)} target="_blank" rel="noreferrer" className="underline hover:text-fg">
+                {photo.author}
+              </a>
+              , {photo.license}
+            </span>
+          )}
+          {suggest && (
+            <Link
+              href={`/photos/suggest/${season.playerId}/${season.year}`}
+              className="ml-auto shrink-0 font-semibold underline hover:text-fg"
+            >
+              {photo ? "Better photo?" : "Suggest a photo"}
+            </Link>
+          )}
         </figcaption>
       )}
     </figure>

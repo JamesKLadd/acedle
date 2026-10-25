@@ -42,3 +42,14 @@ export function findSeason(year: number, playerId: number): PlayerSeason | undef
     .get(year)
     ?.find((s) => s.playerId === playerId);
 }
+
+let latest: Map<number, PlayerSeason> | null = null;
+
+/** A player's latest rollable season (for their name and details), by player id. */
+export function findPlayer(playerId: number): PlayerSeason | undefined {
+  if (!latest) {
+    latest = new Map();
+    for (const seasons of loadSeasons().values()) for (const s of seasons) latest.set(s.playerId, s);
+  }
+  return latest.get(playerId);
+}

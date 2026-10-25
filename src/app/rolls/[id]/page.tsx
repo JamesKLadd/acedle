@@ -9,7 +9,7 @@ import { TournamentLink } from "@/components/tournament/tournament-link";
 import { buttonClass } from "@/components/ui";
 import { getViewer } from "@/lib/auth/viewer";
 import { fmtDay, fmtScore } from "@/lib/format";
-import { seasonPhoto } from "@/lib/photos";
+import { getSeasonPhoto } from "@/lib/season-photo";
 import { getSharedRoll } from "@/lib/roll/shared";
 import { topPercent } from "@/lib/scoring/distribution";
 import { shareText } from "@/lib/share";
@@ -60,7 +60,7 @@ async function RollDetail({ params }: { params: Promise<{ id: string }> }) {
         season={roll.season}
         score={roll.score}
         topPercent={topPercent(roll.score.total)}
-        photo={seasonPhoto(roll.season.playerId, roll.season.year)}
+        photo={await getSeasonPhoto(roll.season.playerId, roll.season.year)}
       />
       <div className="mt-4 flex flex-wrap items-center gap-4">
         {isOwner ? (

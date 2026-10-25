@@ -1,8 +1,9 @@
 import { ImageResponse } from "next/og";
 
 import { fmtDate, fmtMult, fmtScore, fmtTopPercent } from "@/lib/format";
+import { PlayerArt } from "@/components/player-art";
 import { OG, OG_RARITY, OG_SIZE, OgChip, OgFrame, ogFonts, ogImageData } from "@/lib/og";
-import { seasonPhoto } from "@/lib/photos";
+import { getSeasonPhoto } from "@/lib/season-photo";
 import { rarityOf } from "@/lib/rarity";
 import { getSharedRoll } from "@/lib/roll/shared";
 import { topPercent } from "@/lib/scoring/distribution";
@@ -10,14 +11,6 @@ import { topPercent } from "@/lib/scoring/distribution";
 export const alt = "A roll on Acedle";
 export const size = OG_SIZE;
 export const contentType = "image/png";
-
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
 
 /** Link preview card: the season as a trading card, with the score and who rolled it. */
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
@@ -42,7 +35,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const { season: s, score } = roll;
   const top = topPercent(score.total);
   const rarity = rarityOf(top);
-  const photo = seasonPhoto(s.playerId, s.year);
+  const photo = await getSeasonPhoto(s.playerId, s.year);
   const photoData = photo && (await ogImageData(photo.thumb));
 
   return new ImageResponse(
@@ -74,19 +67,13 @@ export default async function Image({ params }: { params: Promise<{ id: string }
               <div
                 style={{
                   display: "flex",
-                  width: "100%",
-                  height: "100%",
-                  alignItems: "center",
-                  justifyContent: "center",
                   background: OG.card,
                   borderRadius: 6,
                   border: `4px solid ${OG.ink}`,
-                  fontFamily: "Slab",
-                  fontSize: 110,
-                  color: OG.blue,
+                  overflow: "hidden",
                 }}
               >
-                {initials(s.name)}
+                <PlayerArt hand={s.hand} country={s.country} width={272} height={340} />
               </div>
             )}
           </div>

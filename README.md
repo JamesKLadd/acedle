@@ -97,4 +97,8 @@ Font License (`assets/fonts/OFL-*.txt`).
 
 Player photos come from [Wikimedia Commons](https://commons.wikimedia.org/)
 (`npm run data:photos`, also run monthly by `.github/workflows/photos.yml`);
-each card credits its photo's author and license.
+each card credits its photo's author and license. Players without one get
+illustrated art in their country's colors. Signed-in players can suggest a
+Commons photo for any card (`/photos/suggest/<player>/<year>`); suggestions
+wait in `/admin/photos` until an admin approves them. Admins are the user ids
+in the `admins` table (`insert into public.admins (user_id) values ('…')`).

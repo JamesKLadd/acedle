@@ -34,3 +34,23 @@ export interface SeasonPhoto extends Photo {
 /** The Commons page for a photo (where its full credit and license live). */
 export const photoPage = (p: Pick<Photo, "file">) =>
   `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(p.file.replaceAll(" ", "_"))}`;
+
+/** A year in a category or file name ("Roger Federer at the 2007 US Open"). */
+export function yearIn(text: string): number | null {
+  const m = text.match(/(?<!\d)(19[6-9]\d|20[0-3]\d)(?!\d)/);
+  return m ? Number(m[1]) : null;
+}
+
+/** Commons credits are HTML; keep the text. */
+export function plainText(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&[a-z]+;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120);
+}

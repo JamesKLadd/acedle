@@ -221,7 +221,7 @@ export function RollReveal({
   return (
     <RarityFrame rarity={done ? rarity.id : null}>
       <CardFront
-        photo={<CardPhoto photo={photo} name={season.name} back={!playerLanded} />}
+        photo={<CardPhoto photo={photo} season={season} back={!playerLanded} />}
         label={
           <SeasonLabel
             season={season}

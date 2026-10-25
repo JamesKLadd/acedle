@@ -5,7 +5,7 @@
 
 import { findSeason, loadSeasons } from "@/lib/data/seasons";
 import type { PlayerSeason } from "@/lib/data/types";
-import { seasonPhoto } from "@/lib/photos";
+import { getSeasonPhoto } from "@/lib/season-photo";
 import type { SeasonPhoto } from "@/lib/photos-types";
 import { decoyNames, rollSeason } from "@/lib/roll";
 import { scoreSeason, type ScoreResult } from "@/lib/scoring";
@@ -36,6 +36,6 @@ export async function GET(request: Request) {
     score,
     topPercent: topPercent(score.total),
     decoys: decoyNames(loadSeasons(), season),
-    photo: seasonPhoto(season.playerId, season.year),
+    photo: await getSeasonPhoto(season.playerId, season.year),
   } satisfies SandboxRollResponse);
 }

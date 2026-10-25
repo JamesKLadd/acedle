@@ -146,6 +146,55 @@ export type Database = {
           },
         ];
       };
+      photo_submissions: {
+        Row: {
+          id: string;
+          player_id: number;
+          /** Null = any of the player's seasons. */
+          year: number | null;
+          file: string;
+          thumb: string;
+          width: number;
+          height: number;
+          author: string;
+          license: string;
+          license_url: string | null;
+          photo_year: number | null;
+          note: string | null;
+          submitted_by: string | null;
+          status: "pending" | "approved" | "rejected";
+          created_at: string;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          player_id: number;
+          year?: number | null;
+          file: string;
+          thumb: string;
+          width: number;
+          height: number;
+          author: string;
+          license: string;
+          license_url?: string | null;
+          photo_year?: number | null;
+          note?: string | null;
+          submitted_by?: string | null;
+          status?: "pending" | "approved" | "rejected";
+          created_at?: string;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["photo_submissions"]["Insert"]>;
+        Relationships: [];
+      };
+      admins: {
+        Row: { user_id: string };
+        Insert: { user_id: string };
+        Update: { user_id?: string };
+        Relationships: [];
+      };
     };
     Views: {
       user_badges: {

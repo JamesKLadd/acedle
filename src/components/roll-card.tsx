@@ -292,7 +292,7 @@ export function RollCard({
   return (
     <RarityFrame rarity={topPercent === undefined ? null : rarityOf(topPercent).id}>
       <CardFront
-        photo={<CardPhoto photo={photo} name={s.name} />}
+        photo={<CardPhoto photo={photo} season={s} />}
         label={<SeasonLabel season={s} />}
         chip={topPercent !== undefined && <RarityChip topPercent={topPercent} />}
         name={<PlayerName>{s.name}</PlayerName>}

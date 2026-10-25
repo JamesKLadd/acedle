@@ -13,6 +13,9 @@ const nextConfig: NextConfig = {
     // Roll pages and their preview images; the images also read the fonts.
     "/rolls/**": ["./data/seasons/**", "./data/photos.json", "./assets/fonts/*.ttf"],
     "/api/**": ["./data/seasons/**", "./data/photos.json"],
+    // Photo suggestions and their review show the card being suggested for.
+    "/photos/**": ["./data/seasons/**", "./data/photos.json"],
+    "/admin/**": ["./data/seasons/**", "./data/photos.json"],
     // Link preview images (src/lib/og.tsx).
     "/opengraph-image": ["./assets/fonts/*.ttf"],
     "/leaderboard/**": ["./assets/fonts/*.ttf"],

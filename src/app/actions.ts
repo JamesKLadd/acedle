@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 
 import { loadSeasons } from "@/lib/data/seasons";
-import { seasonPhoto } from "@/lib/photos";
+import { getSeasonPhoto } from "@/lib/season-photo";
 import type { SeasonPhoto } from "@/lib/photos-types";
 import { decoyNames } from "@/lib/roll";
 import { rollForToday, type DailyRoll } from "@/lib/roll/daily";
@@ -44,7 +44,7 @@ export async function rollToday(): Promise<RollTodayResult> {
       created,
       decoys: decoyNames(loadSeasons(), roll.season),
       topPercent: topPercent(roll.score.total),
-      photo: seasonPhoto(roll.season.playerId, roll.season.year),
+      photo: await getSeasonPhoto(roll.season.playerId, roll.season.year),
     };
   } catch (e) {
     console.error(e);
