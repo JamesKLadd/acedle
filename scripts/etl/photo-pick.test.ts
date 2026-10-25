@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { fold, photoScore, pickForSeasons, plainText, yearIn, type Candidate } from "./photo-pick";
+import { fold, photoScore, photoTraits, pickForSeasons, plainText, yearIn, type Candidate } from "./photo-pick";
 
 const photo = (over: Partial<Candidate>): Candidate => ({
   file: "Roger Federer.jpg",
@@ -12,6 +12,10 @@ const photo = (over: Partial<Candidate>): Candidate => ({
   license: "CC BY-SA 4.0",
   licenseUrl: null,
   score: 0,
+  onCourt: false,
+  offCourt: false,
+  cool: false,
+  crowded: false,
   ...over,
 });
 
@@ -32,7 +36,7 @@ describe("fold / plainText", () => {
 });
 
 describe("photoScore", () => {
-  it("prefers upright photos named after the player and skips non-photos", () => {
+  it("prefers upright photos and skips non-photos", () => {
     const upright = photoScore({ ...photo({}), mime: "image/jpeg" }, "Federer")!;
     const wide = photoScore({ ...photo({ width: 1600, height: 600 }), mime: "image/jpeg" }, "Federer")!;
     expect(upright).toBeGreaterThan(wide);
@@ -42,19 +46,33 @@ describe("photoScore", () => {
   });
 });
 
-describe("pickForSeasons", () => {
-  const candidates = [
-    photo({ file: "a.jpg", year: 2007, score: 1 }),
-    photo({ file: "b.jpg", year: 2007, score: 4 }),
-    photo({ file: "c.jpg", year: 2012, score: 2 }),
-    photo({ file: "d.jpg", year: null, score: 5 }),
-  ];
+describe("photoTraits", () => {
+  it("tells court photos, awards nights and celebrations apart", () => {
+    expect(photoTraits("Nadal.jpg", "Rafael Nadal at the 2008 Wimbledon Championships")).toMatchObject({ onCourt: true });
+    expect(photoTraits("Nadal Laureus World Sports Awards 2024.jpg")).toMatchObject({ onCourt: false, offCourt: true });
+    expect(photoTraits("Nadal fist pump Roland Garros.jpg")).toMatchObject({ onCourt: true, cool: true, crowded: false });
+    expect(photoTraits("Djokovic celebrating his win.jpg")).toMatchObject({ cool: true });
+    expect(photoTraits("Nadal vs Federer RG 2007.jpg")).toMatchObject({ crowded: true });
+  });
+});
 
-  it("uses the season's best photo, then the nearest year, then an undated one", () => {
-    expect(pickForSeasons(candidates, [2007, 2009, 2011, 2020])).toEqual({ 2007: 1, 2009: 1, 2011: 2, 2020: 3 });
+describe("pickForSeasons", () => {
+  it("puts on-court photos first, then the closest year, then the coolest", () => {
+    const candidates = [
+      photo({ file: "gala.jpg", year: 2008, offCourt: true }),
+      photo({ file: "court-2006.jpg", year: 2006, onCourt: true }),
+      photo({ file: "court-2008.jpg", year: 2008, onCourt: true }),
+      photo({ file: "court-2008-vamos.jpg", year: 2008, onCourt: true, cool: true }),
+      photo({ file: "court-2015.jpg", year: 2015, onCourt: true }),
+    ];
+    const picks = pickForSeasons(candidates, [2008, 2006, 2014]);
+    expect(candidates[picks[2008]].file).toBe("court-2008-vamos.jpg");
+    expect(candidates[picks[2006]].file).toBe("court-2006.jpg");
+    expect(candidates[picks[2014]].file).toBe("court-2015.jpg");
   });
 
-  it("returns nothing without candidates", () => {
+  it("still uses an off-court photo when it's all there is", () => {
+    expect(pickForSeasons([photo({ offCourt: true })], [2007])).toEqual({ 2007: 0 });
     expect(pickForSeasons([], [2007])).toEqual({});
   });
 });

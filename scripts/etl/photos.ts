@@ -20,7 +20,7 @@ import { parse } from "csv-parse/sync";
 
 import type { PlayerSeason } from "../../src/lib/data/types";
 import type { Photo, PhotosFile } from "../../src/lib/photos-types";
-import { fold, photoScore, pickForSeasons, plainText, yearIn, type Candidate } from "./photo-pick";
+import { fold, photoScore, photoTraits, pickForSeasons, plainText, yearIn, type Candidate } from "./photo-pick";
 import { RAW_DIR, ROOT, SEASONS_DIR } from "./paths";
 
 const OUT = join(ROOT, "data/photos.json");
@@ -136,17 +136,32 @@ const IMAGE_PROPS = {
   prop: "imageinfo",
   iiprop: "url|size|mime|extmetadata",
   iiurlwidth: String(THUMB_WIDTH),
-  iiextmetadatafilter: "DateTimeOriginal|Artist|Credit|LicenseShortName|LicenseUrl",
+  iiextmetadatafilter: "DateTimeOriginal|Artist|Credit|LicenseShortName|LicenseUrl|ImageDescription|ObjectName|Categories",
 };
 
-function toCandidate(page: Json, year: number | null, lastName: string): Candidate | null {
+/**
+ * A file as a candidate. `year` (from the category it was found in) wins;
+ * else the date it was taken, else a year in one of the player's categories
+ * or in the file name. `context` (the category it came from) and the file's
+ * own description and categories tell on-court and celebration photos apart.
+ */
+function toCandidate(page: Json, year: number | null, lastName: string, context = ""): Candidate | null {
   const ii = page.imageinfo?.[0];
   if (!ii?.thumburl) return null;
   const meta = ii.extmetadata ?? {};
   const file = String(page.title).replace(/^File:/, "");
+  const categories = String(meta.Categories?.value ?? "").split("|");
+  const own = fold(lastName);
+  const categoryYear = categories.filter((c) => fold(c).includes(own)).map(yearIn).find((y) => y !== null) ?? null;
+  const about = [
+    context,
+    plainText(meta.ImageDescription?.value ?? ""),
+    plainText(meta.ObjectName?.value ?? ""),
+    ...categories,
+  ].join(" | ");
   const photo: Photo = {
     file,
-    year: year ?? yearIn(plainText(meta.DateTimeOriginal?.value ?? "")) ?? yearIn(file),
+    year: year ?? yearIn(plainText(meta.DateTimeOriginal?.value ?? "")) ?? categoryYear ?? yearIn(file),
     thumb: ii.thumburl,
     width: ii.width,
     height: ii.height,
@@ -155,7 +170,7 @@ function toCandidate(page: Json, year: number | null, lastName: string): Candida
     licenseUrl: meta.LicenseUrl?.value ?? null,
   };
   const score = photoScore({ ...photo, mime: ii.mime }, lastName);
-  return score === null ? null : { ...photo, score };
+  return score === null ? null : { ...photo, score, ...photoTraits(file, about) };
 }
 
 /** A category's subcategories and files (with image info), in as few requests as possible. */
@@ -208,9 +223,9 @@ async function candidatesFor(p: Player, category: string): Promise<Candidate[]> 
   const last = fold(p.lastName);
   const seasons = new Set(p.years);
   const found: Candidate[] = [];
-  const add = (pages: Json[], year: number | null) => {
+  const add = (pages: Json[], year: number | null, context = "") => {
     for (const page of pages) {
-      const c = toCandidate(page, year, p.lastName);
+      const c = toCandidate(page, year, p.lastName, context);
       if (c && !found.some((f) => f.file === c.file)) found.push(c);
     }
   };
@@ -241,13 +256,30 @@ async function candidatesFor(p: Player, category: string): Promise<Candidate[]> 
     if (done.has(y)) continue;
     const m = await members(cat);
     const before = found.length;
-    add(m.files, y);
+    add(m.files, y, cat);
     if (found.length === before) {
       const sub = m.subcats.find((s) => yearIn(s) === y && fold(s).includes(last));
-      if (sub) add((await members(sub)).files, y);
+      if (sub) add((await members(sub)).files, y, sub);
     }
     if (found.length > before) done.add(y);
   }
+
+  // The coolest shots: celebrations, fist pumps, trophies. Search finds them
+  // across all of Commons; keep the ones that name the player.
+  const search = await api(COMMONS, {
+    action: "query",
+    generator: "search",
+    gsrnamespace: "6",
+    gsrlimit: "40",
+    gsrsearch: `"${p.name}" filetype:bitmap (celebrating OR celebrates OR celebration OR fist OR vamos OR victory OR trophy OR champion)`,
+    ...IMAGE_PROPS,
+  });
+  const mentions = (page: Json) => {
+    const meta = page.imageinfo?.[0]?.extmetadata ?? {};
+    const text = [page.title, meta.Categories?.value, plainText(meta.ImageDescription?.value ?? "")].join(" ");
+    return fold(text).includes(last);
+  };
+  add(((search.query?.pages ?? []) as Json[]).filter(mentions), null);
   return found;
 }
 
@@ -274,9 +306,10 @@ async function main() {
     let candidates: Candidate[] = [];
     try {
       if (claim?.category && !quick) candidates = await candidatesFor(p, claim.category);
+      // The main Wikidata image is always in the running too.
       const page = claim?.image ? mainImages.get(claim.image) : undefined;
       const main = page && toCandidate(page, null, p.lastName);
-      if (candidates.length === 0 && main) candidates = [main];
+      if (main && !candidates.some((c) => c.file === main.file)) candidates.push(main);
     } catch (e) {
       console.warn(`  ${p.name}: ${e instanceof Error ? e.message : e}`);
     }
@@ -284,8 +317,8 @@ async function main() {
     const used = [...new Set(Object.values(seasons))].sort((a, b) => a - b);
     if (used.length > 0) {
       const photos = used.map((i) => {
-        const { score: _score, ...photo } = candidates[i]; // eslint-disable-line @typescript-eslint/no-unused-vars
-        return photo;
+        const { file, year, thumb, width, height, author, license, licenseUrl } = candidates[i];
+        return { file, year, thumb, width, height, author, license, licenseUrl };
       });
       out.players[p.id] = {
         photos,
