@@ -96,9 +96,9 @@ export function CardPhoto({
         </div>
       </div>
       {!back && (photo || suggest) && (
-        <figcaption className="mt-1 flex gap-1 text-[10px] leading-tight text-subtle">
+        <figcaption className="mt-1 text-[10px] leading-tight text-subtle">
           {photo && (
-            <span className="min-w-0 truncate">
+            <span className="block truncate">
               {photo.sameSeason || !photo.year ? "Photo" : `Photo from ${photo.year}`}:{" "}
               <a href={photoPage(photo)} target="_blank" rel="noreferrer" className="underline hover:text-fg">
                 {photo.author}
@@ -109,7 +109,7 @@ export function CardPhoto({
           {suggest && (
             <Link
               href={`/photos/suggest/${season.playerId}/${season.year}`}
-              className="ml-auto shrink-0 font-semibold underline hover:text-fg"
+              className="mt-0.5 inline-block font-semibold underline hover:text-fg"
             >
               {photo ? "Better photo?" : "Suggest a photo"}
             </Link>

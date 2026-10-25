@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 
 import { CardPhoto } from "@/components/card-photo";
-import { Card, linkClass, PageTitle, SectionTitle } from "@/components/ui";
+import { Card, FitText, linkClass, PageTitle, SectionTitle } from "@/components/ui";
 import { getAuthSettings } from "@/lib/auth/settings";
 import { getViewer } from "@/lib/auth/viewer";
 import { findPlayer, findSeason } from "@/lib/data/seasons";
@@ -58,7 +58,10 @@ async function Suggest({ params }: { params: Promise<{ player: string; year: str
           <CardPhoto photo={photo} season={season} suggest={false} />
           <div className="min-w-0">
             <p className="font-display text-2xl text-accent">{season.year}</p>
-            <p className="font-display text-xl leading-tight uppercase sm:text-2xl">{season.name}</p>
+            <FitText
+              text={season.name}
+              className="font-display leading-tight break-words uppercase [font-size:min(1.25rem,var(--fit))] sm:[font-size:min(1.5rem,var(--fit))]"
+            />
             <p className="mt-2 text-sm text-muted">
               {photo
                 ? photo.sameSeason

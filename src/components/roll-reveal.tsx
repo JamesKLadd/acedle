@@ -238,7 +238,7 @@ export function RollReveal({
           )
         }
         name={
-          <PlayerName>
+          <PlayerName name={season.name}>
             {playerLanded ? (
               season.name
             ) : yearLanded ? (

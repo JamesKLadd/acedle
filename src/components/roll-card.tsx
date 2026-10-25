@@ -13,7 +13,7 @@ import { badgeSections } from "@/lib/reveal";
 import type { BadgeCategory, EarnedBadge, ScoreResult } from "@/lib/scoring/types";
 
 import { CardPhoto } from "./card-photo";
-import { Chip } from "./ui";
+import { Chip, FitText } from "./ui";
 
 /** Badge categories as rubber stamps: outlined in the category's color. */
 export const CATEGORY_STYLES: Record<BadgeCategory, string> = {
@@ -120,8 +120,17 @@ export function PlayerFacts({ season: s, tierClass }: { season: PlayerSeason; ti
   );
 }
 
-export function PlayerName({ children }: { children: ReactNode }) {
-  return <h2 className="mt-2 font-display text-xl leading-[1.05] break-words uppercase min-[400px]:text-2xl sm:text-4xl">{children}</h2>;
+/** The player's name, sized from `name` so no word breaks; `children` replaces it (the reveal's reel). */
+export function PlayerName({ name, children }: { name: string; children?: ReactNode }) {
+  return (
+    <FitText
+      as="h2"
+      text={name}
+      className="mt-2 font-display leading-[1.05] break-words uppercase [font-size:min(1.25rem,var(--fit))] min-[400px]:[font-size:min(1.5rem,var(--fit))] sm:[font-size:min(2.25rem,var(--fit))]"
+    >
+      {children}
+    </FitText>
+  );
 }
 
 export function BadgeRow({ badge, className = "" }: { badge: EarnedBadge; className?: string }) {
@@ -295,7 +304,7 @@ export function RollCard({
         photo={<CardPhoto photo={photo} season={s} />}
         label={<SeasonLabel season={s} />}
         chip={topPercent !== undefined && <RarityChip topPercent={topPercent} />}
-        name={<PlayerName>{s.name}</PlayerName>}
+        name={<PlayerName name={s.name} />}
         facts={<PlayerFacts season={s} />}
         scoreboard={<Scoreboard base={score.base} multiplier={score.multiplier} total={score.total} />}
       />

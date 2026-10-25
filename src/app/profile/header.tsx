@@ -2,7 +2,7 @@ import { Award, BarChart3, Dices, Flame, Trophy } from "lucide-react";
 import Link from "next/link";
 
 import { Avatar } from "@/components/board";
-import { Chip, linkClass, Stat } from "@/components/ui";
+import { Chip, FitText, linkClass, Stat } from "@/components/ui";
 import { getViewer } from "@/lib/auth/viewer";
 import { fmtDate, fmtScore } from "@/lib/format";
 import { getAllTimeBoard } from "@/lib/leaderboard";
@@ -29,8 +29,12 @@ export async function ProfileHeader() {
     <div>
       <div className="flex items-center gap-4">
         <Avatar src={profile?.avatar_url} name={name} size={64} />
-        <div className="min-w-0">
-          <h1 className="font-display text-2xl leading-tight break-words uppercase min-[400px]:text-3xl sm:text-4xl">{name}</h1>
+        <div className="min-w-0 flex-1">
+          <FitText
+            as="h1"
+            text={name}
+            className="font-display leading-tight break-words uppercase [font-size:min(1.5rem,var(--fit))] min-[400px]:[font-size:min(1.875rem,var(--fit))] sm:[font-size:min(2.25rem,var(--fit))]"
+          />
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
             {profile ? (
               <span>Joined {fmtDate(profile.created_at.slice(0, 10))}</span>

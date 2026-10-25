@@ -2,7 +2,9 @@
 // hooks), so they work in Server and Client Components alike.
 
 import type { LucideIcon } from "lucide-react";
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import type { ComponentPropsWithoutRef, CSSProperties, ReactNode } from "react";
+
+import { longestWordEm } from "@/lib/name-fit";
 
 type Variant = "primary" | "secondary" | "ghost";
 type Size = "sm" | "md" | "lg";
@@ -82,6 +84,34 @@ export function Stat({ icon: Icon, label, value }: { icon: LucideIcon; label: st
         <dt className="text-[11px] leading-tight font-semibold tracking-wider text-muted uppercase">{label}</dt>
         <dd className="tabular truncate font-mono text-lg font-bold">{value}</dd>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Display-face text (a name) that shrinks below its size when its longest
+ * word wouldn't fit the width, so it wraps between words, never inside one.
+ * Give the size in `className` as [font-size:min(<size>,var(--fit))].
+ */
+export function FitText({
+  text,
+  children,
+  className,
+  as: Tag = "p",
+}: {
+  /** The text the size is worked out from (shown unless there are children). */
+  text: string;
+  children?: ReactNode;
+  className: string;
+  as?: "p" | "h1" | "h2";
+}) {
+  // A little slack for kerning and sub-pixel rounding.
+  const fit = { "--fit": `calc(100cqi / ${(longestWordEm(text) * 1.04).toFixed(2)})` } as CSSProperties;
+  return (
+    <div className="@container min-w-0">
+      <Tag className={className} style={fit}>
+        {children ?? text}
+      </Tag>
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { Crown, Play, RotateCcw, Swords, Trophy } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
-import { buttonClass, Card, Eyebrow } from "@/components/ui";
+import { buttonClass, Card, Eyebrow, FitText } from "@/components/ui";
 import { flag } from "@/lib/flags";
 import { fmtScore } from "@/lib/format";
 import { sfx } from "@/lib/sound";
@@ -42,7 +42,10 @@ function Contender({ e, label, odds }: { e: Entrant; label: string; odds: number
       <p className="text-[10px] font-semibold tracking-[0.14em] text-muted uppercase">
         {label} · seed {e.seed}
       </p>
-      <p className="mt-0.5 font-display text-sm leading-tight break-words uppercase sm:text-xl">{e.name}</p>
+      <FitText
+        text={e.name}
+        className="mt-0.5 font-display leading-tight break-words uppercase [font-size:min(0.875rem,var(--fit))] sm:[font-size:min(1.25rem,var(--fit))]"
+      />
       <p className="truncate text-xs text-muted">
         <span aria-hidden>{flag(e.country)}</span> {e.year} · #{e.finalRank}
       </p>
