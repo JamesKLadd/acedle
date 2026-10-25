@@ -4,6 +4,8 @@ import Link from "next/link";
 import { NextRollCountdown, RememberRoll } from "@/components/countdown";
 import { RollCard } from "@/components/roll-card";
 import { ShareButton } from "@/components/share-button";
+import { TotalScore } from "@/components/total-score";
+import { TournamentLink } from "@/components/tournament/tournament-link";
 import { Avatar } from "@/components/board";
 import { buttonClass, Chip, Eyebrow } from "@/components/ui";
 import type { OAuthProvider } from "@/lib/auth/providers";
@@ -18,6 +20,7 @@ import { topPercent } from "@/lib/scoring/distribution";
 import { shareText } from "@/lib/share";
 import { currentStreak } from "@/lib/streak";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { getTournament } from "@/lib/tournament-store";
 
 import { signOut } from "./actions";
 import { RollButton } from "./roll-button";
@@ -45,14 +48,18 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
   const { supabase, userId, isAccount } = await getViewer();
   const day = utcDay();
 
-  const [settings, row, profile, board, params, days] = await Promise.all([
+  const [settings, row, profile, board, params, recent] = await Promise.all([
     getAuthSettings().catch((e) => {
       console.error(e);
       return FALLBACK_SETTINGS;
     }),
     userId ? supabaseRollStore(supabase).find(userId, day) : null,
     userId && isAccount
-      ? supabase.from("profiles").select("handle, avatar_url").eq("user_id", userId).maybeSingle()
+      ? supabase
+          .from("profiles")
+          .select("handle, avatar_url, total_score, roll_count")
+          .eq("user_id", userId)
+          .maybeSingle()
       : null,
     // The rank line is a bonus: don't fail the page over it.
     isAccount
@@ -62,19 +69,24 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
         })
       : null,
     searchParams,
-    // Recent roll days, for the streak.
+    // Recent rolls, for the streak (and a guest's total).
     userId
       ? supabase
           .from("rolls")
-          .select("day")
+          .select("day, score")
           .eq("user_id", userId)
           .order("day", { ascending: false })
           .limit(400)
-          .then(({ data }) => (data ?? []).map((r) => r.day))
+          .then(({ data }) => data ?? [])
       : [],
   ]);
+  const days = recent.map((r) => r.day);
   const streak = currentStreak(days, day);
+  // Accounts keep a running total; guests' rolls are few enough to add up.
+  const total = profile?.data?.total_score ?? recent.reduce((sum, r) => sum + r.score, 0);
+  const rollCount = profile?.data?.roll_count ?? recent.length;
   const roll = row && toDailyRoll(row);
+  const tournament = roll ? await getTournament(roll.id) : null;
   const top = roll ? topPercent(roll.score.total) : 100;
   const mine = board?.find((e) => e.is_viewer);
   const notice =
@@ -91,18 +103,27 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
       {roll ? (
         <div>
           <RememberRoll day={roll.day} />
+          <div className="mb-4">
+            <TotalScore total={total} rolls={rollCount} />
+          </div>
           <div className="mb-3 flex items-center justify-between gap-3">
             <Eyebrow>Today&apos;s roll · {fmtShortDay(day)}</Eyebrow>
             <StreakChip streak={streak} />
           </div>
           <RollCard season={roll.season} score={roll.score} topPercent={top} />
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            <ShareButton text={shareText({ ...roll, topPercent: top })} path={`/rolls/${roll.id}`} />
+            <ShareButton
+              text={shareText({ ...roll, topPercent: top, tournament: tournament?.roundsWon })}
+              path={`/rolls/${roll.id}`}
+            />
             {mine && (
               <Link href="/leaderboard" className={buttonClass({ variant: "secondary" })}>
                 <Trophy className="size-4" aria-hidden />#{mine.rank} of {mine.entries} today
               </Link>
             )}
+          </div>
+          <div className="mt-4">
+            <TournamentLink rollId={roll.id} tournament={tournament} isOwner />
           </div>
           <div className="mt-4 flex items-center gap-2 rounded-xl border border-line bg-surface px-4 py-3 text-sm text-muted">
             <Timer className="size-4 shrink-0 text-accent-text" aria-hidden />
@@ -110,14 +131,13 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
           </div>
         </div>
       ) : userId || settings.guests ? (
-        <div className="flex flex-col gap-3">
+        <RollButton total={total} rolls={rollCount}>
           {streak > 0 && (
             <p className="flex items-center gap-2 text-sm text-muted">
               <StreakChip streak={streak} /> Roll today to keep it going.
             </p>
           )}
-          <RollButton />
-        </div>
+        </RollButton>
       ) : settings.providers.length > 0 ? (
         <p>Sign in to roll today&apos;s season.</p>
       ) : (

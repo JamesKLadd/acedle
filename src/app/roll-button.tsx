@@ -2,9 +2,10 @@
 
 import { Dices } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, type ReactNode } from "react";
 
 import { RollReveal } from "@/components/roll-reveal";
+import { TotalScore } from "@/components/total-score";
 import { buttonClass, Eyebrow } from "@/components/ui";
 import { fmtShortDay } from "@/lib/format";
 import { rememberRollDay } from "@/lib/prefs";
@@ -22,13 +23,15 @@ const isFreeKey = (e: KeyboardEvent) =>
  * Rolls today's season and plays the reveal. A visitor without a session
  * becomes a guest first. That sign-in happens in the browser, so Supabase
  * rate-limits it per visitor rather than per server. When the reveal ends,
- * the page refreshes into the stored roll (with rank and share).
+ * the score is added to the player's total (`total` over `rolls` rolls so
+ * far), then the page refreshes into the stored roll (with rank and share).
  */
-export function RollButton() {
+export function RollButton({ total, rolls, children }: { total: number; rolls: number; children?: ReactNode }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [revealing, setRevealing] = useState<Rolled | null>(null);
+  const [tallying, setTallying] = useState(false);
 
   function roll() {
     setError(null);
@@ -66,21 +69,36 @@ export function RollButton() {
 
   if (revealing) {
     return (
-      <div>
-        <Eyebrow className="mb-3">Today&apos;s roll · {fmtShortDay(revealing.roll.day)}</Eyebrow>
-        <RollReveal
-          season={revealing.roll.season}
-          score={revealing.roll.score}
-          decoys={revealing.decoys}
-          topPercent={revealing.topPercent}
+      <div className="flex flex-col gap-4">
+        <TotalScore
+          total={total}
+          rolls={rolls}
+          adding={tallying ? revealing.roll.score.total : null}
           onDone={() => router.refresh()}
+          sticky
         />
+        <div>
+          <Eyebrow className="mb-3">Today&apos;s roll · {fmtShortDay(revealing.roll.day)}</Eyebrow>
+          <RollReveal
+            season={revealing.roll.season}
+            score={revealing.roll.score}
+            decoys={revealing.decoys}
+            topPercent={revealing.topPercent}
+            onDone={() => setTallying(true)}
+          />
+        </div>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col items-start gap-3">
+      {rolls > 0 && (
+        <div className="mb-1 w-full">
+          <TotalScore total={total} rolls={rolls} />
+        </div>
+      )}
+      {children}
       <button onClick={roll} disabled={pending} className={`${buttonClass({ size: "lg" })} min-w-64`}>
         <Dices className={`size-5 ${pending ? "animate-spin" : ""}`} aria-hidden />
         {pending ? "Rolling…" : "Roll today's season"}

@@ -29,3 +29,7 @@ export function fmtTopPercent(p: number): string {
   const shown = p < 0.1 ? p.toFixed(2) : p < 10 ? p.toFixed(1) : String(Math.round(p));
   return `top ${shown}%`;
 }
+
+/** 49417622 → "49.4M", 41400 → "41.4K" */
+export const fmtCompact = (n: number) =>
+  Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);

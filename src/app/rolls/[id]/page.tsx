@@ -5,12 +5,14 @@ import { Suspense } from "react";
 
 import { RollCard } from "@/components/roll-card";
 import { ShareButton } from "@/components/share-button";
+import { TournamentLink } from "@/components/tournament/tournament-link";
 import { buttonClass } from "@/components/ui";
 import { getViewer } from "@/lib/auth/viewer";
 import { fmtDay, fmtScore } from "@/lib/format";
 import { getSharedRoll } from "@/lib/roll/shared";
 import { topPercent } from "@/lib/scoring/distribution";
 import { shareText } from "@/lib/share";
+import { getTournament } from "@/lib/tournament-store";
 
 export async function generateMetadata({ params }: PageProps<"/rolls/[id]">): Promise<Metadata> {
   const shared = await getSharedRoll((await params).id);
@@ -34,7 +36,7 @@ export default function RollPage({ params }: PageProps<"/rolls/[id]">) {
 /** Anyone with the link can see a roll; its owner also gets the share button. */
 async function RollDetail({ params }: { params: Promise<{ id: string }> }) {
   const [{ id }, viewer] = await Promise.all([params, getViewer()]);
-  const shared = await getSharedRoll(id);
+  const [shared, tournament] = await Promise.all([getSharedRoll(id), getTournament(id)]);
   if (!shared) notFound();
   const { roll, handle } = shared;
   const isOwner = viewer.userId === shared.ownerId;
@@ -57,7 +59,7 @@ async function RollDetail({ params }: { params: Promise<{ id: string }> }) {
       <div className="mt-4 flex flex-wrap items-center gap-4">
         {isOwner ? (
           <ShareButton
-            text={shareText({ ...roll, topPercent: topPercent(roll.score.total) })}
+            text={shareText({ ...roll, topPercent: topPercent(roll.score.total), tournament: tournament?.roundsWon })}
             path={`/rolls/${roll.id}`}
           />
         ) : (
@@ -65,6 +67,9 @@ async function RollDetail({ params }: { params: Promise<{ id: string }> }) {
             Roll your own season
           </Link>
         )}
+      </div>
+      <div className="mt-4">
+        <TournamentLink rollId={roll.id} tournament={tournament} isOwner={isOwner} />
       </div>
     </>
   );

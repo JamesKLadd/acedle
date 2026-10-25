@@ -61,6 +61,13 @@ export const sfx = {
     tone(160 + level * 120, { dur: 0.28, type: "sawtooth", gain: 0.06, slideTo: 420 + level * 300 });
     tone(880 + level * 400, { at: 0.12, dur: 0.22, gain: 0.08 });
   },
+  /** Tournament: the ball was in. */
+  hit: () => {
+    tone(880, { dur: 0.06, type: "square", gain: 0.05 });
+    tone(1320, { at: 0.05, dur: 0.16, type: "triangle", gain: 0.1 });
+  },
+  /** Tournament: the ball was out. */
+  miss: () => tone(240, { dur: 0.3, type: "sawtooth", gain: 0.06, slideTo: 120 }),
   /** End of a legendary or mythic reveal. */
   fanfare: () => {
     [523, 659, 784, 1047].forEach((f, i) => tone(f, { at: i * 0.09, dur: 0.32, type: "triangle", gain: 0.12 }));

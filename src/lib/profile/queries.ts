@@ -9,13 +9,24 @@ import type { RollSummary } from "./collection";
 export const getMyRolls = cache(async (): Promise<RollSummary[]> => {
   const { supabase, userId } = await getViewer();
   if (!userId) return [];
-  const { data, error } = await supabase
-    .from("rolls")
-    .select(
-      "id, day, year, player_id, score, player_name:season_snapshot->>name, country:season_snapshot->>country, final_rank:season_snapshot->ranking->>final",
-    )
-    .eq("user_id", userId)
-    .order("day", { ascending: false });
+  const [{ data, error }, tournaments] = await Promise.all([
+    supabase
+      .from("rolls")
+      .select(
+        "id, day, year, player_id, score, player_name:season_snapshot->>name, country:season_snapshot->>country, final_rank:season_snapshot->ranking->>final",
+      )
+      .eq("user_id", userId)
+      .order("day", { ascending: false }),
+    // Finished tournaments, by roll. A nice-to-have: an error just leaves them out.
+    supabase
+      .from("tournaments")
+      .select("roll_id, rounds_won")
+      .not("rounds_won", "is", null)
+      .then(({ data, error }) => {
+        if (error) console.error(`Couldn't load tournaments: ${error.message}`);
+        return new Map((data ?? []).map((t) => [t.roll_id, t.rounds_won]));
+      }),
+  ]);
   if (error) throw new Error(`Couldn't load your rolls: ${error.message}`);
   return data.map((r) => ({
     id: r.id,
@@ -26,6 +37,7 @@ export const getMyRolls = cache(async (): Promise<RollSummary[]> => {
     country: r.country,
     finalRank: Number(r.final_rank),
     score: r.score,
+    tournament: tournaments.get(r.id) ?? null,
   }));
 });
 

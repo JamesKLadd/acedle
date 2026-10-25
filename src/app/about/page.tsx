@@ -54,6 +54,12 @@ export default function AboutPage() {
           </Link>
           . The <Link href="/sandbox" className={linkClass}>sandbox</Link> rolls as often as you like and never counts.
         </p>
+        <p>
+          After a roll you can take your player into a tournament: a 16-player draw of random player-seasons, seeded by
+          score. Your odds in each match are your share of the two scores; you play your matches by tapping when the
+          ball is in the green (better odds give you a bigger zone and a slower ball), and the rest are decided by the
+          odds. One tournament per daily roll, just for bragging rights: it doesn&apos;t change your score.
+        </p>
       </Section>
 
       <Section title="Data">
@@ -111,6 +117,10 @@ export default function AboutPage() {
           <li>
             Each roll has its own page. Its link is unlisted (a random id), but anyone you share it with can see the
             roll and your display name.
+          </li>
+          <li>
+            If you take a daily roll into a tournament, its draw and your set results are stored with the roll, and
+            anyone with the roll&apos;s link can see how it went.
           </li>
         </ul>
       </Section>

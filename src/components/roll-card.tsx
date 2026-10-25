@@ -222,6 +222,7 @@ export function Scoreboard({
       <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 border-t border-panel-fg/15 pt-2 sm:block sm:border-0 sm:pt-0 sm:text-right">
         <dt className={label}>Score</dt>
         <dd
+          data-score
           className={`tabular min-w-0 font-mono text-2xl font-bold break-all transition-[color,text-shadow] duration-500 sm:text-3xl ${
             final ? "text-[#d4f53c] [text-shadow:0_0_18px_rgb(212_245_60/0.45)]" : ""
           }`}

@@ -4,6 +4,7 @@
 
 import type { PlayerSeason } from "../data/types";
 import type { EarnedBadge } from "../scoring/types";
+import type { Entrant } from "../tournament";
 
 export type Database = {
   public: {
@@ -111,6 +112,40 @@ export type Database = {
           },
         ];
       };
+      tournaments: {
+        Row: {
+          roll_id: string;
+          /** 16 entrants in draw order (src/lib/tournament.ts). */
+          entrants: Entrant[];
+          you: number;
+          seed: number;
+          sets: boolean[];
+          /** Set once the run is over: 0 = out in the round of 16 … 4 = champion. */
+          rounds_won: number | null;
+          created_at: string;
+          finished_at: string | null;
+        };
+        Insert: {
+          roll_id: string;
+          entrants: Entrant[];
+          you: number;
+          seed: number;
+          sets?: boolean[];
+          rounds_won?: number | null;
+          created_at?: string;
+          finished_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["tournaments"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "tournaments_roll_id_fkey";
+            columns: ["roll_id"];
+            isOneToOne: true;
+            referencedRelation: "rolls";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       user_badges: {
@@ -127,6 +162,10 @@ export type Database = {
     Functions: {
       create_profile_and_claim: {
         Args: { p_user_id: string; p_handle: string; p_avatar_url: string | null; p_guest_id?: string | null };
+        Returns: boolean;
+      };
+      tournament_add_set: {
+        Args: { p_roll_id: string; p_expected: number; p_won: boolean; p_rounds_won?: number | null };
         Returns: boolean;
       };
       roll_leaderboard: {

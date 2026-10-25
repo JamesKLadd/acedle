@@ -1,12 +1,14 @@
 "use client";
 
-import { Dices } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Dices, Trophy } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import type { SandboxRollResponse } from "@/app/api/sandbox/roll/route";
 import { RollReveal } from "@/components/roll-reveal";
+import { Tournament } from "@/components/tournament/tournament";
 import { buttonClass } from "@/components/ui";
 import { MAX_LUCK, MIN_LUCK } from "@/lib/roll";
+import type { TournamentSetup } from "@/lib/tournament";
 
 const isFreeKey = (e: KeyboardEvent) =>
   !(e.target instanceof HTMLElement && e.target.closest("input, textarea, select, button, a, [contenteditable]"));
@@ -18,10 +20,33 @@ export function SandboxClient() {
   const [revealing, setRevealing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // A practice tournament for the current roll (nothing is saved).
+  const [draw, setDraw] = useState<TournamentSetup | null>(null);
+  const [drawing, setDrawing] = useState(false);
+  const drawRef = useRef<HTMLDivElement>(null);
+
+  async function enterTournament() {
+    if (!result) return;
+    setDrawing(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/sandbox/tournament?year=${result.season.year}&player=${result.season.playerId}`, {
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error(`Couldn't make the draw (${res.status})`);
+      setDraw((await res.json()) as TournamentSetup);
+      requestAnimationFrame(() => drawRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDrawing(false);
+    }
+  }
 
   async function roll() {
     setLoading(true);
     setError(null);
+    setDraw(null);
     try {
       const res = await fetch(`/api/sandbox/roll?luck=${luck}`, { cache: "no-store" });
       if (!res.ok) throw new Error(`Roll failed (${res.status})`);
@@ -35,9 +60,10 @@ export function SandboxClient() {
   }
 
   // R rolls again; Space rolls when nothing is revealing (Space skips a reveal).
+  // Off during a tournament, where Space plays.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (loading || !isFreeKey(e)) return;
+      if (loading || draw || !isFreeKey(e)) return;
       if (e.key === "r" || e.key === "R" || (e.key === " " && !revealing)) {
         e.preventDefault();
         void roll();
@@ -84,6 +110,28 @@ export function SandboxClient() {
           topPercent={result.topPercent}
           onDone={() => setRevealing(false)}
         />
+      )}
+
+      {result && !revealing && !draw && (
+        <button
+          onClick={enterTournament}
+          disabled={drawing}
+          className="group flex items-center gap-4 rounded-2xl border border-line bg-surface px-5 py-4 text-left transition hover:border-accent/60 disabled:opacity-60"
+        >
+          <Trophy className="size-7 shrink-0 text-accent-text" aria-hidden />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">{drawing ? "Making the draw…" : "Enter a tournament"}</span>
+            <span className="block text-sm text-muted">
+              Take {result.season.year} {result.season.name} into a 16-player draw. Practice only: nothing is saved.
+            </span>
+          </span>
+        </button>
+      )}
+
+      {result && draw && (
+        <div ref={drawRef} className="scroll-mt-20">
+          <Tournament key={result.key} setup={draw} initialSets={[]} />
+        </div>
       )}
     </div>
   );

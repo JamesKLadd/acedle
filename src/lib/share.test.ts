@@ -4,7 +4,7 @@ import { findSeason } from "./data/seasons";
 import { fmtTopPercent } from "./format";
 import { scoreSeason } from "./scoring";
 import { seasonTotals, topPercent } from "./scoring/distribution";
-import { shareText } from "./share";
+import { shareText, tournamentLine } from "./share";
 
 describe("topPercent", () => {
   const totals = [10, 20, 20, 30, 40];
@@ -63,5 +63,16 @@ describe("shareText", () => {
       topPercent: 100,
     });
     expect(text.split("\n")[2]).toBe("—");
+  });
+});
+
+describe("tournamentLine", () => {
+  it.each([
+    [4, "🏆 Won the tournament"],
+    [3, "🥈 Tournament: runner-up"],
+    [2, "🎾 Tournament: out in the semifinal"],
+    [0, "🎾 Tournament: out in the round of 16"],
+  ])("%s rounds won → %s", (roundsWon, line) => {
+    expect(tournamentLine(roundsWon)).toBe(line);
   });
 });

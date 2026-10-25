@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Crown } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -10,6 +10,7 @@ import { fmtDate, fmtScore } from "@/lib/format";
 import { summarizeRolls } from "@/lib/profile/collection";
 import { getMyRolls } from "@/lib/profile/queries";
 import { topPercent } from "@/lib/scoring/distribution";
+import { ROUNDS, ROUNDS_SHORT } from "@/lib/tournament";
 
 export default function HistoryPage() {
   return (
@@ -54,6 +55,14 @@ async function History() {
                   #{r.finalRank} · {flag(r.country)} {r.country}
                 </span>
                 {r.id === best?.id && rolls.length > 1 && <span className="font-semibold text-legendary">Best roll</span>}
+                {r.tournament != null &&
+                  (r.tournament === ROUNDS.length ? (
+                    <span className="flex items-center gap-1 font-semibold text-legendary">
+                      <Crown className="size-3.5" aria-hidden /> Tournament champion
+                    </span>
+                  ) : (
+                    <span>Tournament: {ROUNDS_SHORT[r.tournament]}</span>
+                  ))}
               </span>
             </span>
             <span className="flex flex-col items-end gap-1">

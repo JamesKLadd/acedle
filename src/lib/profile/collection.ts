@@ -15,6 +15,8 @@ export interface RollSummary {
   country: string;
   finalRank: number;
   score: number;
+  /** Rounds won in the roll's finished tournament (4 = champion), if any. */
+  tournament?: number | null;
 }
 
 export function summarizeRolls(rolls: readonly RollSummary[]) {

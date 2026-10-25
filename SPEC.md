@@ -228,6 +228,18 @@ Top seasons:
 - **Luck slider** 1×–10×. Year stays uniform. Each player's weight within the year is `1 / rank^k`, where `k` goes from 0 (uniform) at 1× to 1.5 at 10×.
 - `/sandbox` (the old `/dev/roll` redirects there), backed by `GET /api/sandbox/roll?luck=1..10`. Use `?year=&player=` to score a specific season.
 - Every sandbox roll plays the reveal, then shows "top X% of all seasons".
+- Any sandbox roll can enter a practice tournament (§5.1). Nothing is saved.
+
+### 5.1 Tournament mode
+
+After a roll, the player can take the rolled player-season into a tournament (`src/lib/tournament.ts`).
+
+- **Draw:** the player plus 15 player-seasons rolled like the daily roll (any year, any of its top 100), seeded 1–16 by score in a standard draw, so seeds 1 and 2 can only meet in the final.
+- **Odds:** a player scoring `a` beats one scoring `b` with chance `a / (a + b)` (their share of the two scores). Scores span 1k–100M, so ratios, not differences: twice the score is a 67% favourite, ten times is 91%.
+- **The player's matches:** a timing game. A ball sweeps back and forth along a track; tapping (or Space) while it's in the green zone wins the set. Best of 3 sets, the final best of 5. The odds set the zone (7% of the track at 0% odds, 40% at 100%) and the ball's speed (0.45–1.6 s per pass).
+- **Other matches:** decided by the odds, using a random number drawn from the tournament's seed per match, so the draw always plays out the same. Results of a round show once the player has finished their own match in it.
+- **Daily rolls:** one tournament per roll, saved: the draw, its seed and each set as it's played (a lost set can't be replayed). The result (rounds won, 4 = champion) shows on the roll page, in the share text and in the roll history. It never changes scores or leaderboards. Other people can see a roll's finished draw at `/rolls/[id]/tournament`.
+- **Sandbox:** the same game, with nothing saved (`GET /api/sandbox/tournament?year=&player=` makes the draw).
 
 ---
 
@@ -328,6 +340,7 @@ Schema: `supabase/migrations/`. Types: `src/lib/supabase/database.types.ts`
 - `user_badges`: a view over `rolls.badges` (times earned, first and last day) for the collection page.
 - `create_profile_and_claim(user, handle, avatar, guest)`: run by the OAuth callback. It creates the profile, and only if that's new does it move the guest's rolls. Service role only.
 - `delete_stale_guests(days = 30)`: deletes anonymous users older than 30 days with no roll in the last 30 days (their rolls go too). A `pg_cron` job runs it nightly at 04:23 UTC.
+- `tournaments(roll_id, entrants jsonb, you, seed, sets boolean[], rounds_won, created_at, finished_at)`: one per roll (§5.1), readable by the roll's owner. `tournament_add_set(roll, expected, won, rounds_won)` appends a set only if the tournament still has `expected` sets and isn't over. Service role only.
 - `roll_leaderboard(from, to)`: rolls between two UTC days (at most a week), so it serves both the daily and the weekly board. `alltime_leaderboard()`: accounts by `total_score`. Both return the top 100 plus the viewer's own rows, with public columns only: handle, avatar, player, score, rank, the board's size, and `is_viewer`.
 
 ---
@@ -364,6 +377,11 @@ Schema: `supabase/migrations/`. Types: `src/lib/supabase/database.types.ts`
 - Nightly cleanup of abandoned guests (`pg_cron`)
 - `/about` with credits, licenses, data dates and what's stored
 - Deploy steps in the README; the deploy itself needs the owner's Vercel account
+
+**M6 — Tournament mode + polish ✅**
+- Redesign in the scoreboard theme: reveal reels, rarity tiers, countdown, sound, link previews, phone layouts
+- Total score above the daily roll, with the day's score counted into it after the reveal
+- Tournament mode for daily rolls (saved, fourth migration) and sandbox rolls (§5.1)
 
 ---
 
