@@ -16,6 +16,7 @@ const photo = (over: Partial<Candidate>): Candidate => ({
   offCourt: false,
   cool: false,
   crowded: false,
+  named: true,
   ...over,
 });
 
@@ -37,12 +38,12 @@ describe("fold / plainText", () => {
 
 describe("photoScore", () => {
   it("prefers upright photos and skips non-photos", () => {
-    const upright = photoScore({ ...photo({}), mime: "image/jpeg" }, "Federer")!;
-    const wide = photoScore({ ...photo({ width: 1600, height: 600 }), mime: "image/jpeg" }, "Federer")!;
+    const upright = photoScore({ ...photo({}), mime: "image/jpeg" })!;
+    const wide = photoScore({ ...photo({ width: 1600, height: 600 }), mime: "image/jpeg" })!;
     expect(upright).toBeGreaterThan(wide);
-    expect(photoScore({ ...photo({ file: "Federer signature.jpg" }), mime: "image/jpeg" }, "Federer")).toBeNull();
-    expect(photoScore({ ...photo({ file: "Lógó Roger Federer.jpg" }), mime: "image/jpeg" }, "Federer")).toBeNull();
-    expect(photoScore({ ...photo({}), mime: "image/png" }, "Federer")).toBeNull();
+    expect(photoScore({ ...photo({ file: "Federer signature.jpg" }), mime: "image/jpeg" })).toBeNull();
+    expect(photoScore({ ...photo({ file: "Lógó Roger Federer.jpg" }), mime: "image/jpeg" })).toBeNull();
+    expect(photoScore({ ...photo({}), mime: "image/png" })).toBeNull();
   });
 });
 
@@ -53,6 +54,10 @@ describe("photoTraits", () => {
     expect(photoTraits("Nadal fist pump Roland Garros.jpg")).toMatchObject({ onCourt: true, cool: true, crowded: false });
     expect(photoTraits("Djokovic celebrating his win.jpg")).toMatchObject({ cool: true });
     expect(photoTraits("Nadal vs Federer RG 2007.jpg")).toMatchObject({ crowded: true });
+    expect(photoTraits("Nole Skupstina BG feb08.jpg")).toMatchObject({ offCourt: true });
+    expect(photoTraits("C'est mon gosse, romance. Paroles de Henri Leconte.jpg")).toMatchObject({ offCourt: true });
+    expect(photoTraits("Karel Novacek-RG1994.jpg", "", "Cherkasov")).toMatchObject({ named: false });
+    expect(photoTraits("AndreiCherkasov-RG1994.jpg", "", "Cherkasov")).toMatchObject({ named: true });
   });
 });
 

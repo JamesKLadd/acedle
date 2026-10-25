@@ -169,8 +169,8 @@ function toCandidate(page: Json, year: number | null, lastName: string, context 
     license: plainText(meta.LicenseShortName?.value ?? "") || "See Commons",
     licenseUrl: meta.LicenseUrl?.value ?? null,
   };
-  const score = photoScore({ ...photo, mime: ii.mime }, lastName);
-  return score === null ? null : { ...photo, score, ...photoTraits(file, about) };
+  const score = photoScore({ ...photo, mime: ii.mime });
+  return score === null ? null : { ...photo, score, ...photoTraits(file, about, lastName) };
 }
 
 /** A category's subcategories and files (with image info), in as few requests as possible. */
@@ -274,12 +274,17 @@ async function candidatesFor(p: Player, category: string): Promise<Candidate[]> 
     gsrsearch: `"${p.name}" filetype:bitmap (celebrating OR celebrates OR celebration OR fist OR vamos OR victory OR trophy OR champion)`,
     ...IMAGE_PROPS,
   });
-  const mentions = (page: Json) => {
+  // Search finds anything mentioning the name: keep tennis photos that are
+  // named after the player or filed in one of their categories.
+  const ofPlayer = (page: Json) => {
     const meta = page.imageinfo?.[0]?.extmetadata ?? {};
-    const text = [page.title, meta.Categories?.value, plainText(meta.ImageDescription?.value ?? "")].join(" ");
-    return fold(text).includes(last);
+    const cats = String(meta.Categories?.value ?? "").split("|");
+    return fold(String(page.title)).includes(last) || cats.some((c) => fold(c).includes(last));
   };
-  add(((search.query?.pages ?? []) as Json[]).filter(mentions), null);
+  const before = found.length;
+  add(((search.query?.pages ?? []) as Json[]).filter(ofPlayer), null);
+  // Drop search hits that aren't tennis photos.
+  for (let i = found.length - 1; i >= before; i--) if (!found[i].onCourt) found.splice(i, 1);
   return found;
 }
 

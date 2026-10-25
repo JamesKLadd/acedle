@@ -41,7 +41,7 @@ const ON_COURT =
 
 /** Signs it wasn't: awards, red carpets, press rooms, politics. */
 const OFF_COURT =
-  /award|laureus|gala|red carpet|premiere|press conference|conference|interview|meeting|embassy|president|minister|ceremony at|visit|reception|museum|fashion|launch|signing|backstage|portrait session|headshot|football|soccer|bernabeu|camp nou|golf|basketball|formula|grand prix/i;
+  /award|laureus|gala|red carpet|premiere|press conference|conference|interview|meeting|embassy|president|minister|ceremony at|visit|reception|museum|fashion|launch|signing|backstage|portrait session|headshot|football|soccer|bernabeu|camp nou|golf|basketball|formula|grand prix|skupstina|parliament|assembly|city hall|town hall|paroles|musique|sheet music|romance/i;
 
 /** The good stuff: celebrations, trophies, crowds. */
 const COOL =
@@ -51,6 +51,8 @@ const COOL =
 const CROWDED = /doubles|\bteam\b|\bvs\.?\b|\bversus\b| and | with |&|handshake|group|players\b|ball ?kids?/i;
 
 export interface Traits {
+  /** The file is named after the player (photos named after someone else are usually of them). */
+  named: boolean;
   onCourt: boolean;
   offCourt: boolean;
   cool: boolean;
@@ -62,19 +64,24 @@ export interface Traits {
  * What a photo shows, from its file name (`file`) and its description and
  * categories (`about`). Who else is in frame only shows in the file name.
  */
-export function photoTraits(file: string, about = ""): Traits {
+export function photoTraits(file: string, about = "", lastName = ""): Traits {
   const t = fold(`${file} | ${about}`);
   const offCourt = OFF_COURT.test(t);
-  return { onCourt: ON_COURT.test(t) && !offCourt, offCourt, cool: COOL.test(t), crowded: CROWDED.test(fold(file)) };
+  return {
+    named: lastName !== "" && fold(file).includes(fold(lastName)),
+    onCourt: ON_COURT.test(t) && !offCourt,
+    offCourt,
+    cool: COOL.test(t),
+    crowded: CROWDED.test(fold(file)),
+  };
 }
 
 /** How well a photo crops into the card's window; null if unusable. */
-export function photoScore(p: Photo & { mime: string }, lastName: string): number | null {
+export function photoScore(p: Photo & { mime: string }): number | null {
   if (p.mime !== "image/jpeg") return null;
   if (Math.min(p.width, p.height) < 300) return null;
   if (NOT_A_PORTRAIT.test(fold(p.file))) return null;
   let score = 0;
-  if (fold(p.file).includes(fold(lastName))) score += 1;
   // Crops are usually tight on one player, like a card photo.
   if (/\(cropped\)|\bcrop/i.test(p.file)) score += 1;
   // Card photos are portrait: upright or square photos crop best.
@@ -97,7 +104,15 @@ export interface Candidate extends Photo, Traits {
  */
 export function seasonValue(c: Candidate, year: number): number {
   const gap = c.year === null ? 4 : Math.min(Math.abs(c.year - year), 8);
-  return (c.onCourt ? 12 : 0) - (c.offCourt ? 8 : 0) - 2.5 * gap + (c.cool ? 4 : 0) - (c.crowded ? 3 : 0) + c.score;
+  return (
+    (c.onCourt ? 12 : 0) -
+    (c.offCourt ? 8 : 0) -
+    2.5 * gap +
+    (c.cool ? 4 : 0) -
+    (c.crowded ? 3 : 0) +
+    (c.named ? 0 : -4) +
+    c.score
+  );
 }
 
 /** Which candidate each season year uses (indices into `candidates`). */
