@@ -100,7 +100,7 @@ export function TimingGame({ chance, onResult }: { chance: number; onResult: (wo
       <p
         aria-live="polite"
         className={`text-center font-display font-bold tracking-wide uppercase ${
-          phase === "in" || phase === "out" ? "animate-pop text-3xl" : "text-sm text-panel-fg/70"
+          phase === "in" || phase === "out" ? "animate-pop text-3xl" : "text-xs text-panel-fg/70 sm:text-sm"
         } ${phase === "in" ? "text-[#34c759]" : phase === "out" ? "text-red-400" : ""}`}
       >
         {message}

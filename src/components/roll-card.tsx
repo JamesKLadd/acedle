@@ -63,7 +63,7 @@ export function RarityFrame({ rarity, children }: { rarity: Rarity | null; child
 export function RarityChip({ topPercent, className = "" }: { topPercent: number; className?: string }) {
   const r = rarityOf(topPercent);
   return (
-    <Chip className={`shrink-0 border-2 border-current bg-surface tracking-wide uppercase ${RARITY_TEXT[r.id]} ${className}`}>
+    <Chip className={`shrink-0 border-2 border-current bg-surface text-[10px] tracking-wide uppercase sm:text-xs ${RARITY_TEXT[r.id]} ${className}`}>
       {isSpecial(r.id) && <Sparkles className="size-3" aria-hidden />}
       {r.label} · {fmtTopPercent(topPercent)}
     </Chip>
@@ -85,7 +85,7 @@ export function TierChip({ finalRank, className = "" }: { finalRank: number; cla
 export function SeasonLabel({ season: s, year }: { season: PlayerSeason; year?: ReactNode }) {
   return (
     <span>
-      <span className="inline-block -skew-x-6 rounded-[3px] bg-blue px-2 pt-0.5 font-display text-lg leading-snug tracking-wider text-gold">
+      <span className="inline-block -skew-x-6 rounded-[3px] bg-blue px-2 pt-0.5 font-display text-base leading-snug tracking-wider text-gold sm:text-lg">
         <span className="inline-block skew-x-6">{year ?? s.year}</span>
       </span>
       {s.live && year === undefined && (
@@ -98,7 +98,7 @@ export function SeasonLabel({ season: s, year }: { season: PlayerSeason; year?: 
 /** Rank, country, record and titles under the player's name. */
 export function PlayerFacts({ season: s, tierClass }: { season: PlayerSeason; tierClass?: string }) {
   return (
-    <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-sm text-muted">
+    <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs text-muted sm:text-sm">
       <span className="font-bold text-fg">#{s.ranking.final}</span>
       <span aria-hidden>·</span>
       <span>
@@ -121,7 +121,7 @@ export function PlayerFacts({ season: s, tierClass }: { season: PlayerSeason; ti
 }
 
 export function PlayerName({ children }: { children: ReactNode }) {
-  return <h2 className="mt-2 font-display text-3xl leading-[1.05] uppercase sm:text-4xl">{children}</h2>;
+  return <h2 className="mt-2 font-display text-xl leading-[1.05] break-words uppercase min-[400px]:text-2xl sm:text-4xl">{children}</h2>;
 }
 
 export function BadgeRow({ badge, className = "" }: { badge: EarnedBadge; className?: string }) {
@@ -228,7 +228,7 @@ export function Scoreboard({
         <dt className={label}>Score</dt>
         <dd
           data-score
-          className={`tabular min-w-0 font-display text-3xl break-all transition-colors duration-500 ${
+          className={`tabular min-w-0 font-display text-2xl break-all transition-colors duration-500 min-[400px]:text-3xl ${
             final ? "text-gold [text-shadow:2px_2px_0_rgb(0_0_0/0.35)]" : ""
           }`}
         >
@@ -260,17 +260,17 @@ export function CardFront({
   scoreboard: ReactNode;
 }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-[13rem_1fr] sm:gap-5">
-      {photo}
+    <div className="grid grid-cols-[7.5rem_1fr] gap-x-3 sm:grid-cols-[13rem_1fr] sm:gap-x-5">
+      <div className="sm:row-span-2">{photo}</div>
       <div className="flex min-w-0 flex-col">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
           {label}
           {chip}
         </div>
         {name}
         {facts}
-        <div className="mt-auto">{scoreboard}</div>
       </div>
+      <div className="col-span-2 sm:col-span-1 sm:col-start-2 sm:mt-auto">{scoreboard}</div>
     </div>
   );
 }

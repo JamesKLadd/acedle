@@ -10,7 +10,7 @@ const THEME_ICON = { system: Monitor, light: Sun, dark: Moon };
 const THEME_LABEL: Record<Theme, string> = { system: "Theme: system", light: "Theme: light", dark: "Theme: dark" };
 
 const iconButton =
-  "grid size-9 place-items-center rounded-lg text-muted transition hover:bg-surface-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-accent";
+  "grid size-8 place-items-center rounded-lg sm:size-9 text-muted transition hover:bg-surface-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-accent";
 
 /** Sound and theme toggles in the site header. */
 export function HeaderControls() {

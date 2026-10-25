@@ -10,7 +10,7 @@ import { Today, TodaySkeleton } from "./today";
 function FannedCards() {
   const card = "absolute top-0 left-1/2 h-40 w-28 overflow-hidden rounded-md border-2 border-fg shadow-[3px_3px_0_0_rgb(0_0_0/0.25)]";
   return (
-    <div className="relative mx-auto h-44 w-48 shrink-0" aria-hidden>
+    <div className="relative mx-auto hidden h-44 w-48 shrink-0 sm:block" aria-hidden>
       <div className={`${card} -ml-[5.5rem] origin-bottom -rotate-[14deg]`}>
         <CardBack />
       </div>
@@ -29,10 +29,10 @@ export default function Home({ searchParams }: PageProps<"/">) {
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pt-8 pb-6">
       {/* Today's pack: a red wrapper with a crimped edge. */}
       <section className="relative overflow-hidden rounded-lg border-2 border-fg bg-accent text-accent-ink shadow-[5px_5px_0_0_var(--blue)]">
-        <div className="flex flex-col gap-6 p-6 sm:flex-row sm:items-center sm:p-8">
+        <div className="flex flex-col gap-6 p-5 sm:flex-row sm:items-center sm:p-8">
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-extrabold tracking-[0.25em] text-gold uppercase">Series 1990–2026 · one card a day</p>
-            <h1 className="mt-2 font-display text-4xl leading-none uppercase [text-shadow:3px_3px_0_var(--blue)] sm:text-5xl">
+            <p className="text-[11px] font-extrabold tracking-[0.14em] text-gold uppercase sm:text-xs sm:tracking-[0.25em]">Series 1990–2026 · one card a day</p>
+            <h1 className="mt-2 font-display text-[1.85rem] leading-none uppercase [text-shadow:3px_3px_0_var(--blue)] sm:text-5xl">
               Roll today&apos;s card
             </h1>
             <p className="mt-3 max-w-sm text-sm text-accent-ink/90 sm:text-base">

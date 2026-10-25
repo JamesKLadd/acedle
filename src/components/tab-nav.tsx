@@ -19,7 +19,7 @@ export function TabLinks({ tabs, pathname }: { tabs: readonly { href: string; la
             key={t.href}
             href={t.href}
             aria-current={active ? "page" : undefined}
-            className={`flex-1 rounded-[4px] px-3 py-2 text-center font-bold tracking-wider uppercase transition ${
+            className={`flex-1 rounded-[4px] px-2 py-2 text-center text-[11px] font-bold tracking-wide whitespace-nowrap uppercase transition sm:px-3 sm:text-xs sm:tracking-wider ${
               active ? "bg-blue text-panel-fg" : "text-muted hover:bg-surface-2 hover:text-fg"
             }`}
           >

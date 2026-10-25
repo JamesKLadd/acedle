@@ -18,7 +18,7 @@ export function SiteNav() {
 /** The links themselves; labels show from md up (the header is full below that). Without a pathname nothing is highlighted. */
 export function NavLinks({ pathname }: { pathname: string | null }) {
   return (
-    <nav className="flex items-center gap-1" aria-label="Main">
+    <nav className="flex items-center gap-0.5 sm:gap-1" aria-label="Main">
       {LINKS.map(({ href, label, icon: Icon }) => {
         const active = pathname !== null && (pathname === href || pathname.startsWith(`${href}/`));
         return (
@@ -27,7 +27,7 @@ export function NavLinks({ pathname }: { pathname: string | null }) {
             href={href}
             aria-current={active ? "page" : undefined}
             title={label}
-            className={`flex h-9 items-center gap-1.5 rounded-md px-2.5 text-xs font-bold tracking-wider uppercase transition ${
+            className={`flex h-9 items-center gap-1.5 rounded-md px-2 text-xs sm:px-2.5 font-bold tracking-wider uppercase transition ${
               active ? "bg-fg text-surface" : "text-muted hover:bg-surface-2 hover:text-fg"
             }`}
           >

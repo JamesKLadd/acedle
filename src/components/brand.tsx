@@ -24,7 +24,7 @@ export function Wordmark() {
   return (
     <span
       aria-hidden
-      className="inline-flex -rotate-3 items-center gap-1 rounded-[5px] border-2 border-fg bg-accent px-2 pt-0.5 pb-px font-display text-xl leading-none tracking-wide text-accent-ink uppercase shadow-[3px_3px_0_0_var(--blue)]">
+      className="inline-flex -rotate-3 items-center gap-1 rounded-[5px] border-2 border-fg bg-accent px-1.5 pt-0.5 pb-px font-display text-base leading-none sm:px-2 sm:text-xl tracking-wide text-accent-ink uppercase shadow-[3px_3px_0_0_var(--blue)]">
       <svg viewBox="0 0 24 24" className="size-3 fill-gold" aria-hidden>
         <path d="M12 1.5l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.6l-6.4 3.5L7 14l-5.3-5 7.2-.9z" />
       </svg>

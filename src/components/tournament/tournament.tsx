@@ -42,7 +42,7 @@ function Contender({ e, label, odds }: { e: Entrant; label: string; odds: number
       <p className="text-[10px] font-semibold tracking-[0.14em] text-muted uppercase">
         {label} · seed {e.seed}
       </p>
-      <p className="mt-0.5 truncate font-display text-xl leading-tight font-bold uppercase">{e.name}</p>
+      <p className="mt-0.5 font-display text-sm leading-tight break-words uppercase sm:text-xl">{e.name}</p>
       <p className="truncate text-xs text-muted">
         <span aria-hidden>{flag(e.country)}</span> {e.year} · #{e.finalRank}
       </p>

@@ -20,7 +20,7 @@ const VARIANTS: Record<Variant, string> = {
 const SIZES: Record<Size, string> = {
   sm: "h-8 gap-1.5 rounded-md px-3 text-xs",
   md: "h-10 gap-2 rounded-md px-4 text-sm",
-  lg: "h-14 gap-2.5 rounded-lg px-7 text-base",
+  lg: "h-12 gap-2.5 rounded-lg px-5 text-sm sm:h-14 sm:px-7 sm:text-base",
 };
 
 /** Button styles, for <button> and <Link> alike. */
@@ -49,7 +49,7 @@ export function Eyebrow({ children, className = "" }: { children: ReactNode; cla
 export function PageTitle({ children, subtitle }: { children: ReactNode; subtitle?: ReactNode }) {
   return (
     <div>
-      <h1 className="font-display text-3xl tracking-wide uppercase [text-shadow:3px_3px_0_var(--accent-soft)] min-[400px]:text-4xl sm:text-5xl">
+      <h1 className="font-display text-[1.7rem] leading-tight tracking-wide uppercase [text-shadow:3px_3px_0_var(--accent-soft)] min-[400px]:text-3xl sm:text-5xl">
         {children}
       </h1>
       {subtitle && <p className="mt-2 text-muted">{subtitle}</p>}
@@ -59,7 +59,7 @@ export function PageTitle({ children, subtitle }: { children: ReactNode; subtitl
 
 export function SectionTitle({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <h2 className={`font-display text-xl tracking-wide text-fg uppercase ${className}`}>{children}</h2>
+    <h2 className={`font-display text-lg tracking-wide text-fg uppercase sm:text-xl ${className}`}>{children}</h2>
   );
 }
 

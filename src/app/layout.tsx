@@ -68,7 +68,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <FlagPolyfill />
         {/* An ink rule with a red stripe under it, like a card's top band. */}
         <header className="sticky top-0 z-30 border-b-2 border-fg bg-surface/95 shadow-[0_3px_0_0_var(--accent)] backdrop-blur">
-          <div className="mx-auto flex w-full max-w-2xl items-center gap-2 px-4 py-2.5">
+          <div className="mx-auto flex w-full max-w-2xl items-center gap-1 px-3 py-2.5 sm:gap-2 sm:px-4">
             <Link
               href="/"
               aria-label="Acedle home"
@@ -83,7 +83,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Suspense fallback={<NavLinks pathname={null} />}>
               <SiteNav />
             </Suspense>
-            <span className="mx-1 h-5 w-px shrink-0 bg-line" aria-hidden />
+            <span className="mx-0.5 h-5 w-px shrink-0 bg-line sm:mx-1" aria-hidden />
             <HeaderControls />
           </div>
         </header>
