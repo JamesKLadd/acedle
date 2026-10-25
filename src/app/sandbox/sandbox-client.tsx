@@ -5,10 +5,11 @@ import { useEffect, useRef, useState } from "react";
 
 import type { SandboxRollResponse } from "@/app/api/sandbox/roll/route";
 import { RollReveal } from "@/components/roll-reveal";
+import { TierPicker } from "@/components/tournament/tier-picker";
 import { Tournament } from "@/components/tournament/tournament";
 import { buttonClass } from "@/components/ui";
 import { MAX_LUCK, MIN_LUCK } from "@/lib/roll";
-import type { TournamentSetup } from "@/lib/tournament";
+import type { TierId, TournamentSetup } from "@/lib/tournament";
 
 const isFreeKey = (e: KeyboardEvent) =>
   !(e.target instanceof HTMLElement && e.target.closest("input, textarea, select, button, a, [contenteditable]"));
@@ -22,15 +23,17 @@ export function SandboxClient() {
   const [error, setError] = useState<string | null>(null);
   // A practice tournament for the current roll (nothing is saved).
   const [draw, setDraw] = useState<TournamentSetup | null>(null);
-  const [drawing, setDrawing] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [drawing, setDrawing] = useState<TierId | null>(null);
   const drawRef = useRef<HTMLDivElement>(null);
 
-  async function enterTournament() {
+  async function enterTournament(tier: TierId) {
     if (!result) return;
-    setDrawing(true);
+    setDrawing(tier);
     setError(null);
     try {
-      const res = await fetch(`/api/sandbox/tournament?year=${result.season.year}&player=${result.season.playerId}`, {
+      const { year, playerId } = result.season;
+      const res = await fetch(`/api/sandbox/tournament?year=${year}&player=${playerId}&tier=${tier}`, {
         cache: "no-store",
       });
       if (!res.ok) throw new Error(`Couldn't make the draw (${res.status})`);
@@ -39,7 +42,7 @@ export function SandboxClient() {
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
-      setDrawing(false);
+      setDrawing(null);
     }
   }
 
@@ -47,6 +50,7 @@ export function SandboxClient() {
     setLoading(true);
     setError(null);
     setDraw(null);
+    setPicking(false);
     try {
       const res = await fetch(`/api/sandbox/roll?luck=${luck}`, { cache: "no-store" });
       if (!res.ok) throw new Error(`Roll failed (${res.status})`);
@@ -113,20 +117,29 @@ export function SandboxClient() {
         />
       )}
 
-      {result && !revealing && !draw && (
+      {result && !revealing && !draw && !picking && (
         <button
-          onClick={enterTournament}
-          disabled={drawing}
-          className="group flex items-center gap-4 rounded-lg border-2 border-line bg-surface shadow-[4px_4px_0_0_var(--line)] px-5 py-4 text-left transition hover:border-accent/60 disabled:opacity-60"
+          onClick={() => setPicking(true)}
+          className="group flex items-center gap-4 rounded-lg border-2 border-line bg-surface shadow-[4px_4px_0_0_var(--line)] px-5 py-4 text-left transition hover:border-accent/60"
         >
           <Trophy className="size-7 shrink-0 text-accent-text" aria-hidden />
           <span className="min-w-0 flex-1">
-            <span className="block font-semibold">{drawing ? "Making the draw…" : "Enter a tournament"}</span>
+            <span className="block font-semibold">Enter a tournament</span>
             <span className="block text-sm text-muted">
-              Take {result.season.year} {result.season.name} into a 16-player draw. Practice only: nothing is saved.
+              Take {result.season.year} {result.season.name} into a 250, 500, 1000 or Grand Slam. Practice only:
+              nothing is saved.
             </span>
           </span>
         </button>
+      )}
+
+      {result && !revealing && !draw && picking && (
+        <div className="flex flex-col gap-3 rounded-lg border-2 border-line bg-surface p-4 shadow-[4px_4px_0_0_var(--line)]">
+          <p className="font-semibold">
+            Pick a tournament for {result.season.year} {result.season.name}
+          </p>
+          <TierPicker onPick={enterTournament} pending={drawing} />
+        </div>
       )}
 
       {result && draw && (

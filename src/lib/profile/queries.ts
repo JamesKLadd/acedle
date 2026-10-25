@@ -20,11 +20,11 @@ export const getMyRolls = cache(async (): Promise<RollSummary[]> => {
     // Finished tournaments, by roll. A nice-to-have: an error just leaves them out.
     supabase
       .from("tournaments")
-      .select("roll_id, rounds_won")
+      .select("roll_id, rounds_won, tier")
       .not("rounds_won", "is", null)
       .then(({ data, error }) => {
         if (error) console.error(`Couldn't load tournaments: ${error.message}`);
-        return new Map((data ?? []).map((t) => [t.roll_id, t.rounds_won]));
+        return new Map((data ?? []).map((t) => [t.roll_id, { tier: t.tier, roundsWon: t.rounds_won! }]));
       }),
   ]);
   if (error) throw new Error(`Couldn't load your rolls: ${error.message}`);

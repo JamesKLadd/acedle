@@ -1,9 +1,10 @@
-// Tournament mode: the rolled player joins a 16-player draw of random
-// player-seasons, seeded by score. The player's own matches are decided by a
-// timing game (best of 3 sets, the final best of 5); every other match is
-// decided by the two scores' odds, drawn from the tournament's seed so a
-// replay always gives the same results. Pure and client-safe: the state is
-// derived from the setup plus the player's set results, nothing else.
+// Tournament mode: the rolled player joins a draw of random player-seasons,
+// seeded by score. Tiers set the draw's size, who's in it and how long the
+// matches are (TIERS). The player's own matches are decided by a timing game;
+// every other match is decided by the two scores' odds, drawn from the
+// tournament's seed so a replay always gives the same results. Pure and
+// client-safe: the state is derived from the setup plus the player's set
+// results, nothing else.
 
 export interface Entrant {
   playerId: number;
@@ -13,12 +14,42 @@ export interface Entrant {
   country: string;
   finalRank: number;
   score: number;
-  /** 1–16, by score. */
+  /** 1 to the draw size, by score. */
   seed: number;
 }
 
+export type TierId = "250" | "500" | "1000" | "slam";
+
+export interface Tier {
+  /** Null for runs from before tiers. */
+  id: TierId | null;
+  /** "250", "Grand Slam". */
+  name: string;
+  size: 16 | 32;
+  /** The other entrants' final ranks, inclusive. */
+  ranks: readonly [number, number];
+  /** Sets per match: best of `bestOf`, the final best of `finalBestOf`. */
+  bestOf: 3 | 5;
+  finalBestOf: 3 | 5;
+}
+
+export const TIERS: readonly Tier[] = [
+  { id: "250", name: "250", size: 16, ranks: [20, 100], bestOf: 3, finalBestOf: 3 },
+  { id: "500", name: "500", size: 16, ranks: [1, 75], bestOf: 3, finalBestOf: 3 },
+  { id: "1000", name: "1000", size: 16, ranks: [1, 50], bestOf: 3, finalBestOf: 5 },
+  { id: "slam", name: "Grand Slam", size: 32, ranks: [1, 32], bestOf: 5, finalBestOf: 5 },
+];
+
+/** Runs from before tiers: 16 players from anywhere in the top 100, the final best of 5. */
+const CLASSIC: Tier = { id: null, name: "Tournament", size: 16, ranks: [1, 100], bestOf: 3, finalBestOf: 5 };
+
+export const tierOf = (id: TierId | null | undefined): Tier => TIERS.find((t) => t.id === id) ?? CLASSIC;
+export const isTierId = (x: unknown): x is TierId => TIERS.some((t) => t.id === x);
+
 export interface TournamentSetup {
-  /** 16 entrants in draw order: matches are (0, 1), (2, 3), … */
+  /** Null for runs from before tiers. */
+  tier: TierId | null;
+  /** The entrants in draw order: matches are (0, 1), (2, 3), … */
   entrants: Entrant[];
   /** Index of the player's own entrant. */
   you: number;
@@ -26,15 +57,33 @@ export interface TournamentSetup {
   seed: number;
 }
 
-export const DRAW_SIZE = 16;
-export const ROUNDS = ["Round of 16", "Quarterfinal", "Semifinal", "Final"] as const;
-export const ROUNDS_SHORT = ["R16", "QF", "SF", "F"] as const;
+/** Rounds in a draw of `size`: 4 for 16 players, 5 for 32. */
+export const roundCount = (size: number) => Math.round(Math.log2(size));
 
-/** Sets needed to win: best of 3, the final best of 5. */
-export const bestOf = (round: number) => (round === ROUNDS.length - 1 ? 5 : 3);
+const ROUND_NAMES = ["Final", "Semifinal", "Quarterfinal", "Round of 16", "Round of 32"];
+const ROUND_SHORT = ["F", "SF", "QF", "R16", "R32"];
 
-/** Draw position of each seed, top to bottom (1 and 2 can only meet in the final). */
-const SEED_ORDER = [1, 16, 8, 9, 5, 12, 4, 13, 3, 14, 6, 11, 7, 10, 2, 15];
+/** "Round of 32" … "Final", for round `r` of a draw of `size`. */
+export const roundName = (size: number, r: number) => ROUND_NAMES[roundCount(size) - 1 - r];
+export const roundShort = (size: number, r: number) => ROUND_SHORT[roundCount(size) - 1 - r];
+
+/** Best of how many sets round `r` is. */
+export function bestOf(tier: Tier, r: number) {
+  return r === roundCount(tier.size) - 1 ? tier.finalBestOf : tier.bestOf;
+}
+
+/**
+ * Draw position of each seed, top to bottom: 1 and 2 can only meet in the
+ * final, 1–4 in the semifinals, and so on. The 16 order predates tiers and
+ * stays as it was.
+ */
+const SEED_ORDER: Record<16 | 32, number[]> = {
+  16: [1, 16, 8, 9, 5, 12, 4, 13, 3, 14, 6, 11, 7, 10, 2, 15],
+  32: [
+    1, 32, 16, 17, 9, 24, 8, 25, 5, 28, 12, 21, 13, 20, 4, 29, 3, 30, 14, 19, 11, 22, 6, 27, 7, 26, 10, 23, 15, 18, 2,
+    31,
+  ],
+};
 
 /**
  * Chance that a player scoring `a` beats one scoring `b`: their share of the
@@ -49,12 +98,14 @@ export function winChance(a: number, b: number): number {
 
 /**
  * The timing game for a set at `chance` (the player's odds): the green zone's
- * share of the track and how long the ball takes to cross it. Big favourites
- * get a wide zone and a slow ball; big underdogs a sliver and a fast one.
+ * share of the track (its lines included) and how long the ball takes to
+ * cross it. Big favourites get a wide zone and a slow ball; big underdogs
+ * little more than the two lines and a fast ball. The zone grows slowly at
+ * first, so long odds stay long.
  */
 export function gameParams(chance: number) {
   const p = Math.min(1, Math.max(0, chance));
-  return { zone: 0.07 + 0.33 * p, passMs: Math.round(450 + 1150 * p) };
+  return { zone: 0.022 + 0.378 * p ** 1.5, passMs: Math.round(380 + 1220 * p) };
 }
 
 /** How near the line (as a share of the track) a tap has to be for a line review. */
@@ -88,20 +139,27 @@ export function lineCall(pos: number, center: number, zone: number): LineCall {
 }
 
 /**
- * Seeds the 16 entrants by score (ties keep their order) and places them in
- * the draw. `you` is the player's index in `pool`; returns it in the draw.
+ * Seeds the entrants by score (ties keep their order) and places them in a
+ * `tier` draw. `you` is the player's index in `pool`; returns it in the draw.
  */
-export function seedDraw(pool: readonly Omit<Entrant, "seed">[], you: number, seed: number): TournamentSetup {
-  if (pool.length !== DRAW_SIZE) throw new Error(`A draw needs ${DRAW_SIZE} entrants`);
+export function seedDraw(
+  pool: readonly Omit<Entrant, "seed">[],
+  you: number,
+  seed: number,
+  tier: TierId | null,
+): TournamentSetup {
+  const { size } = tierOf(tier);
+  if (pool.length !== size) throw new Error(`A draw needs ${size} entrants`);
+  const order = SEED_ORDER[size];
   const bySeed = pool.map((e, i) => ({ e, i })).sort((a, b) => b.e.score - a.e.score);
-  const entrants = SEED_ORDER.map((s) => ({ ...bySeed[s - 1].e, seed: s }));
-  const drawYou = SEED_ORDER.indexOf(bySeed.findIndex((x) => x.i === you) + 1);
-  return { entrants, you: drawYou, seed: seed >>> 0 };
+  const entrants = order.map((s) => ({ ...bySeed[s - 1].e, seed: s }));
+  const drawYou = order.indexOf(bySeed.findIndex((x) => x.i === you) + 1);
+  return { tier, entrants, you: drawYou, seed: seed >>> 0 };
 }
 
-/** Deterministic [0, 1) for one match, from the tournament's seed. */
-export function matchRandom(seed: number, round: number, match: number): number {
-  let t = (seed ^ Math.imul(round * DRAW_SIZE + match + 1, 0x9e3779b1)) >>> 0;
+/** Deterministic [0, 1) for one match of a draw of `size`, from the tournament's seed. */
+export function matchRandom(seed: number, round: number, match: number, size = 16): number {
+  let t = (seed ^ Math.imul(round * size + match + 1, 0x9e3779b1)) >>> 0;
   t = (t + 0x6d2b79f5) >>> 0;
   let r = Math.imul(t ^ (t >>> 15), t | 1);
   r ^= r + Math.imul(r ^ (r >>> 7), r | 61);
@@ -121,11 +179,11 @@ export interface Match {
 }
 
 export interface TournamentState {
-  /** rounds[r] lists that round's matches (8, 4, 2, 1). */
+  /** rounds[r] lists that round's matches (… 8, 4, 2, 1). */
   rounds: Match[][];
   /** The player's undecided match (with its set score so far); null once they're out or champion. */
   current: { round: number; index: number; opponent: number; bestOf: number; won: number; lost: number } | null;
-  /** Rounds the player won (0–4, 4 = champion), once their run is over; null while it goes on. */
+  /** Rounds the player won (all of them = champion), once their run is over; null while it goes on. */
   roundsWon: number | null;
   /** The round the player is in (or went out in). */
   round: number;
@@ -135,6 +193,9 @@ export interface TournamentState {
 /** The whole draw after the player's `sets` (true = set won), in order. */
 export function tournamentState(setup: TournamentSetup, sets: readonly boolean[]): TournamentState {
   const { you, seed } = setup;
+  const tier = tierOf(setup.tier);
+  const size = setup.entrants.length;
+  const count = roundCount(size);
   const rounds: Match[][] = [];
   let alive: (number | null)[] = setup.entrants.map((_, i) => i);
   let next = 0;
@@ -142,7 +203,7 @@ export function tournamentState(setup: TournamentSetup, sets: readonly boolean[]
   let roundsWon: number | null = null;
   let round = 0;
 
-  for (let r = 0; r < ROUNDS.length; r++) {
+  for (let r = 0; r < count; r++) {
     const matches: Match[] = [];
     for (let m = 0; m < alive.length / 2; m++) {
       const a = alive[2 * m];
@@ -150,7 +211,7 @@ export function tournamentState(setup: TournamentSetup, sets: readonly boolean[]
       const match: Match = { round: r, index: m, a, b, winner: null, sets: null };
       if (a === you || b === you) {
         const opponent = (a === you ? b : a)!;
-        const need = Math.ceil(bestOf(r) / 2);
+        const need = Math.ceil(bestOf(tier, r) / 2);
         const played: boolean[] = [];
         let won = 0;
         let lost = 0;
@@ -164,16 +225,16 @@ export function tournamentState(setup: TournamentSetup, sets: readonly boolean[]
         round = r;
         if (won === need) {
           match.winner = you;
-          if (r === ROUNDS.length - 1) roundsWon = ROUNDS.length;
+          if (r === count - 1) roundsWon = count;
         } else if (lost === need) {
           match.winner = opponent;
           roundsWon = r;
         } else {
-          current = { round: r, index: m, opponent, bestOf: bestOf(r), won, lost };
+          current = { round: r, index: m, opponent, bestOf: bestOf(tier, r), won, lost };
         }
       } else if (a !== null && b !== null) {
         const e = setup.entrants;
-        match.winner = matchRandom(seed, r, m) < winChance(e[a].score, e[b].score) ? a : b;
+        match.winner = matchRandom(seed, r, m, size) < winChance(e[a].score, e[b].score) ? a : b;
       }
       matches.push(match);
     }
@@ -181,11 +242,33 @@ export function tournamentState(setup: TournamentSetup, sets: readonly boolean[]
     alive = matches.map((m) => m.winner);
   }
 
-  const champion = rounds[ROUNDS.length - 1][0].winner;
+  const champion = rounds[count - 1][0].winner;
   return { rounds, current, roundsWon, round, champion };
 }
 
-/** How far a finished run went, e.g. "Champion", "Semifinals". */
-export function runLabel(roundsWon: number): string {
-  return ["Round of 16", "Quarterfinals", "Semifinals", "Runner-up", "Champion"][roundsWon] ?? "—";
+/** How far a finished run in a draw of `size` went, e.g. "Champion", "Semifinals". */
+export function runLabel(roundsWon: number, size: number): string {
+  const count = roundCount(size);
+  if (roundsWon >= count) return "Champion";
+  if (roundsWon === count - 1) return "Runner-up";
+  const name = roundName(size, roundsWon);
+  return name.startsWith("Round") ? name : `${name}s`;
+}
+
+/** A finished run: its tier and how many rounds the player won. */
+export interface RunResult {
+  tier: TierId | null;
+  roundsWon: number;
+}
+
+export const isChampion = (run: RunResult) => run.roundsWon >= roundCount(tierOf(run.tier).size);
+
+/** How the tiers read in sentences: "the 500", "the Grand Slam", "the tournament". */
+export const tierPhrase = (tier: TierId | null) => (tier ? `the ${tierOf(tier).name}` : "the tournament");
+
+/** How a tier's draw plays: "16 players ranked 20–100 · best of 3". */
+export function tierFormat(tier: Tier): string {
+  const sets =
+    tier.bestOf === tier.finalBestOf ? `best of ${tier.bestOf}` : `best of ${tier.bestOf}, the final best of ${tier.finalBestOf}`;
+  return `${tier.size} players ranked ${tier.ranks[0]}–${tier.ranks[1]} · ${sets}`;
 }

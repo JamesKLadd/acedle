@@ -1,6 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import { DRAW_SIZE, gameParams, lineCall, matchRandom, seedDraw, tournamentState, winChance, type Entrant } from "./tournament";
+import {
+  gameParams,
+  lineCall,
+  matchRandom,
+  roundName,
+  runLabel,
+  seedDraw,
+  tierOf,
+  TIERS,
+  tournamentState,
+  winChance,
+  type Entrant,
+} from "./tournament";
 
 const entrant = (i: number, score: number): Omit<Entrant, "seed"> => ({
   playerId: i,
@@ -11,9 +23,11 @@ const entrant = (i: number, score: number): Omit<Entrant, "seed"> => ({
   score,
 });
 
-// Scores 16k down to 1k; the player is the 8th best (score 9,000).
-const pool = Array.from({ length: DRAW_SIZE }, (_, i) => entrant(i, (DRAW_SIZE - i) * 1000));
-const setup = seedDraw(pool, 7, 12345);
+// Scores 16k down to 1k; the player is the 8th best (score 9,000). A run
+// from before tiers (16 players, the final best of 5).
+const poolOf = (n: number) => Array.from({ length: n }, (_, i) => entrant(i, (n - i) * 1000));
+const pool = poolOf(16);
+const setup = seedDraw(pool, 7, 12345, null);
 
 describe("winChance", () => {
   it("is the share of the two scores", () => {
@@ -31,6 +45,71 @@ describe("gameParams", () => {
     expect(fav.zone).toBeGreaterThan(dog.zone);
     expect(fav.passMs).toBeGreaterThan(dog.passMs);
     expect(gameParams(2)).toEqual(gameParams(1));
+  });
+
+  it("leaves long shots little more than the lines and a fast ball", () => {
+    expect(gameParams(0).zone).toBeLessThan(0.025);
+    expect(gameParams(0).passMs).toBeLessThan(400);
+    // A 10% underdog gets well under a tenth of the track.
+    expect(gameParams(0.1).zone).toBeLessThan(0.04);
+    expect(gameParams(1).zone).toBeCloseTo(0.4);
+  });
+});
+
+describe("tiers", () => {
+  it("sets the draw size and match length", () => {
+    expect(TIERS.map((t) => [t.id, t.size, t.ranks, t.bestOf, t.finalBestOf])).toEqual([
+      ["250", 16, [20, 100], 3, 3],
+      ["500", 16, [1, 75], 3, 3],
+      ["1000", 16, [1, 50], 3, 5],
+      ["slam", 32, [1, 32], 5, 5],
+    ]);
+    expect(tierOf(null)).toMatchObject({ size: 16, bestOf: 3, finalBestOf: 5 });
+  });
+
+  it("names the rounds by draw size", () => {
+    expect([0, 1, 2, 3, 4].map((r) => roundName(32, r))).toEqual([
+      "Round of 32",
+      "Round of 16",
+      "Quarterfinal",
+      "Semifinal",
+      "Final",
+    ]);
+    expect(roundName(16, 0)).toBe("Round of 16");
+    expect([0, 2, 3, 4].map((n) => runLabel(n, 16))).toEqual(["Round of 16", "Semifinals", "Runner-up", "Champion"]);
+    expect([0, 4, 5].map((n) => runLabel(n, 32))).toEqual(["Round of 32", "Runner-up", "Champion"]);
+  });
+
+  it("seeds so the top seeds meet as late as they can", () => {
+    for (const size of [16, 32]) {
+      const tier = TIERS.find((t) => t.size === size)!.id;
+      const { entrants } = seedDraw(poolOf(size), 0, 1, tier);
+      const seeds = entrants.map((e) => e.seed);
+      expect([...seeds].sort((a, b) => a - b)).toEqual(Array.from({ length: size }, (_, i) => i + 1));
+      // Each section of the draw holds exactly one of the seeds that size: halves one of 1–2, quarters 1–4…
+      for (let part = 2; part <= size / 2; part *= 2) {
+        for (let i = 0; i < size; i += size / part) {
+          expect(seeds.slice(i, i + size / part).filter((s) => s <= part)).toHaveLength(1);
+        }
+      }
+    }
+  });
+
+  it("plays a Grand Slam as five best-of-five rounds", () => {
+    const slam = seedDraw(poolOf(32), 31, 7, "slam");
+    expect(slam.entrants[slam.you].seed).toBe(32);
+    const s = tournamentState(slam, []);
+    expect(s.rounds.map((r) => r.length)).toEqual([16, 8, 4, 2, 1]);
+    expect(s.current).toMatchObject({ round: 0, bestOf: 5 });
+    expect(tournamentState(slam, [true, true, false, false, false])).toMatchObject({ roundsWon: 0 });
+    const champ = tournamentState(slam, Array(15).fill(true));
+    expect(champ).toMatchObject({ roundsWon: 5, champion: slam.you });
+  });
+
+  it("plays a 250 best of 3 throughout", () => {
+    const t = seedDraw(pool, 7, 3, "250");
+    expect(tournamentState(t, Array(6).fill(true)).current).toMatchObject({ round: 3, bestOf: 3 });
+    expect(tournamentState(t, Array(8).fill(true)).roundsWon).toBe(4);
   });
 });
 

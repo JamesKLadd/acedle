@@ -55,10 +55,14 @@ export default function AboutPage() {
           . The <Link href="/sandbox" className={linkClass}>sandbox</Link> rolls as often as you like and never counts.
         </p>
         <p>
-          After a roll you can take your player into a tournament: a 16-player draw of random player-seasons, seeded by
-          score. Your odds in each match are your share of the two scores; you play your matches by tapping when the
-          ball is in the green (better odds give you a bigger zone and a slower ball; the lines count as in, and taps
-          right by a line go to a line review), and the rest are decided by the odds. One tournament per daily roll, just for bragging rights: it doesn&apos;t change your score.
+          After a roll you can take your player into a tournament, seeded by score: a 250 (16 players ranked 20–100,
+          best of 3), a 500 (16 players ranked 1–75, best of 3), a 1000 (16 players ranked 1–50, best of 3 with a
+          best-of-5 final) or a Grand Slam (32 players ranked 1–32, best of 5). The other players are random
+          player-seasons from any year with a final ranking in that range. Your odds in each match are your share of
+          the two scores; you play your matches by tapping when the ball is in the green (better odds give you a
+          bigger zone and a slower ball, long shots little more than the lines; the lines count as in, and taps right
+          by a line go to a line review), and the rest are decided by the odds. One tournament per daily roll, just
+          for bragging rights: it doesn&apos;t change your score.
         </p>
       </Section>
 

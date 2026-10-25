@@ -4,7 +4,7 @@
 
 import type { PlayerSeason } from "../data/types";
 import type { EarnedBadge } from "../scoring/types";
-import type { Entrant } from "../tournament";
+import type { Entrant, TierId } from "../tournament";
 
 export type Database = {
   public: {
@@ -115,18 +115,21 @@ export type Database = {
       tournaments: {
         Row: {
           roll_id: string;
-          /** 16 entrants in draw order (src/lib/tournament.ts). */
+          /** Tier (src/lib/tournament.ts, TIERS); null for runs from before tiers. */
+          tier: TierId | null;
+          /** 16 or 32 entrants in draw order (src/lib/tournament.ts). */
           entrants: Entrant[];
           you: number;
           seed: number;
           sets: boolean[];
-          /** Set once the run is over: 0 = out in the round of 16 … 4 = champion. */
+          /** Set once the run is over: rounds won (all of them = champion). */
           rounds_won: number | null;
           created_at: string;
           finished_at: string | null;
         };
         Insert: {
           roll_id: string;
+          tier?: TierId | null;
           entrants: Entrant[];
           you: number;
           seed: number;

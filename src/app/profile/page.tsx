@@ -10,7 +10,7 @@ import { fmtDate, fmtScore } from "@/lib/format";
 import { summarizeRolls } from "@/lib/profile/collection";
 import { getMyRolls } from "@/lib/profile/queries";
 import { topPercent } from "@/lib/scoring/distribution";
-import { ROUNDS, ROUNDS_SHORT } from "@/lib/tournament";
+import { isChampion, roundShort, tierOf } from "@/lib/tournament";
 
 export default function HistoryPage() {
   return (
@@ -56,12 +56,15 @@ async function History() {
                 </span>
                 {r.id === best?.id && rolls.length > 1 && <span className="font-semibold text-legendary">Best roll</span>}
                 {r.tournament != null &&
-                  (r.tournament === ROUNDS.length ? (
+                  (isChampion(r.tournament) ? (
                     <span className="flex items-center gap-1 font-semibold text-legendary">
-                      <Crown className="size-3.5" aria-hidden /> Tournament champion
+                      <Crown className="size-3.5" aria-hidden /> {tierOf(r.tournament.tier).name} champion
                     </span>
                   ) : (
-                    <span>Tournament: {ROUNDS_SHORT[r.tournament]}</span>
+                    <span>
+                      {tierOf(r.tournament.tier).name}:{" "}
+                      {roundShort(tierOf(r.tournament.tier).size, r.tournament.roundsWon)}
+                    </span>
                   ))}
               </span>
             </span>

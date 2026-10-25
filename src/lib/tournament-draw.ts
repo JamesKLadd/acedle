@@ -2,9 +2,9 @@ import "server-only";
 
 import { loadSeasons } from "./data/seasons";
 import type { PlayerSeason } from "./data/types";
-import { rollSeason, type Rng } from "./roll";
+import type { Rng } from "./roll";
 import { scoreSeason } from "./scoring";
-import { DRAW_SIZE, seedDraw, type Entrant, type TournamentSetup } from "./tournament";
+import { seedDraw, tierOf, type Entrant, type TierId, type TournamentSetup } from "./tournament";
 
 const entrantOf = (s: PlayerSeason, score: number): Omit<Entrant, "seed"> => ({
   playerId: s.playerId,
@@ -15,21 +15,37 @@ const entrantOf = (s: PlayerSeason, score: number): Omit<Entrant, "seed"> => ({
   score,
 });
 
+let all: PlayerSeason[] | null = null;
+
+/** Every rollable player-season. */
+function allSeasons(): PlayerSeason[] {
+  all ??= [...loadSeasons().values()].flat();
+  return all;
+}
+
 /**
- * A draw for the rolled `season` (which scored `score`): 15 other
- * player-seasons, rolled like the daily roll (any year, any of its top 100),
- * then seeded by score.
+ * A `tier` draw for the rolled `season` (which scored `score`): the other
+ * entrants are random player-seasons from any year whose final rank is in
+ * the tier's range, then everyone is seeded by score.
  */
-export function drawTournament(season: PlayerSeason, score: number, rng: Rng = Math.random): TournamentSetup {
-  const pools = loadSeasons();
-  const taken = new Set([`${season.year}:${season.playerId}`]);
+export function drawTournament(
+  season: PlayerSeason,
+  score: number,
+  tier: TierId,
+  rng: Rng = Math.random,
+): TournamentSetup {
+  const { size, ranks } = tierOf(tier);
+  const [lo, hi] = ranks;
+  const field = allSeasons().filter(
+    (s) => s.ranking.final >= lo && s.ranking.final <= hi && !(s.year === season.year && s.playerId === season.playerId),
+  );
   const pool = [entrantOf(season, score)];
-  while (pool.length < DRAW_SIZE) {
-    const s = rollSeason(pools, { rng });
-    const key = `${s.year}:${s.playerId}`;
-    if (taken.has(key)) continue;
-    taken.add(key);
-    pool.push(entrantOf(s, scoreSeason(s).total));
+  const taken = new Set<number>();
+  while (pool.length < size) {
+    const i = Math.floor(rng() * field.length);
+    if (taken.has(i)) continue;
+    taken.add(i);
+    pool.push(entrantOf(field[i], scoreSeason(field[i]).total));
   }
-  return seedDraw(pool, 0, Math.floor(rng() * 2 ** 32));
+  return seedDraw(pool, 0, Math.floor(rng() * 2 ** 32), tier);
 }

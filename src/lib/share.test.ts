@@ -68,11 +68,16 @@ describe("shareText", () => {
 
 describe("tournamentLine", () => {
   it.each([
-    [4, "🏆 Won the tournament"],
-    [3, "🥈 Tournament: runner-up"],
-    [2, "🎾 Tournament: out in the semifinal"],
-    [0, "🎾 Tournament: out in the round of 16"],
-  ])("%s rounds won → %s", (roundsWon, line) => {
-    expect(tournamentLine(roundsWon)).toBe(line);
+    [null, 4, "🏆 Won the tournament"],
+    [null, 3, "🥈 Tournament: runner-up"],
+    [null, 2, "🎾 Tournament: out in the semifinal"],
+    [null, 0, "🎾 Tournament: out in the round of 16"],
+    ["500", 4, "🏆 Won the 500"],
+    ["1000", 2, "🎾 1000: out in the semifinal"],
+    ["slam", 5, "🏆 Won the Grand Slam"],
+    ["slam", 4, "🥈 Grand Slam: runner-up"],
+    ["slam", 0, "🎾 Grand Slam: out in the round of 32"],
+  ] as const)("%s, %s rounds won → %s", (tier, roundsWon, line) => {
+    expect(tournamentLine({ tier, roundsWon })).toBe(line);
   });
 });

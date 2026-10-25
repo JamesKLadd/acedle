@@ -13,7 +13,7 @@ import { getSeasonPhoto } from "@/lib/season-photo";
 import { getSharedRoll } from "@/lib/roll/shared";
 import { topPercent } from "@/lib/scoring/distribution";
 import { shareText } from "@/lib/share";
-import { getTournament } from "@/lib/tournament-store";
+import { getTournament, runResult } from "@/lib/tournament-store";
 
 export async function generateMetadata({ params }: PageProps<"/rolls/[id]">): Promise<Metadata> {
   const shared = await getSharedRoll((await params).id);
@@ -71,7 +71,7 @@ async function RollDetail({
       <div className="mt-4 flex flex-wrap items-center gap-4">
         {isOwner ? (
           <ShareButton
-            text={shareText({ ...roll, topPercent: topPercent(roll.score.total), tournament: tournament?.roundsWon })}
+            text={shareText({ ...roll, topPercent: topPercent(roll.score.total), tournament: runResult(tournament) })}
             path={`/rolls/${roll.id}`}
           />
         ) : (

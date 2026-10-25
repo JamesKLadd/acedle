@@ -21,7 +21,7 @@ import { topPercent } from "@/lib/scoring/distribution";
 import { shareText } from "@/lib/share";
 import { currentStreak } from "@/lib/streak";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { getTournament } from "@/lib/tournament-store";
+import { getTournament, runResult } from "@/lib/tournament-store";
 
 import { signOut } from "./actions";
 import { RollButton } from "./roll-button";
@@ -119,7 +119,7 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
           />
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <ShareButton
-              text={shareText({ ...roll, topPercent: top, tournament: tournament?.roundsWon })}
+              text={shareText({ ...roll, topPercent: top, tournament: runResult(tournament) })}
               path={`/rolls/${roll.id}`}
             />
             {mine && (

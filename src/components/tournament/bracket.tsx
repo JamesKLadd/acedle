@@ -2,7 +2,7 @@ import { Trophy } from "lucide-react";
 
 import { flag } from "@/lib/flags";
 import { fmtCompact } from "@/lib/format";
-import { ROUNDS, ROUNDS_SHORT, type Match, type TournamentSetup, type TournamentState } from "@/lib/tournament";
+import { roundName, roundShort, type Match, type TournamentSetup, type TournamentState } from "@/lib/tournament";
 
 /**
  * Whether a match's result can be shown yet: the player's own matches as
@@ -91,8 +91,8 @@ export function Bracket({ setup, state }: { setup: TournamentSetup; state: Tourn
         {state.rounds.map((matches, r) => (
           <div key={r} className="flex w-52 flex-col">
             <p className="mb-2 text-center text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">
-              <span className="sm:hidden">{ROUNDS_SHORT[r]}</span>
-              <span className="hidden sm:inline">{ROUNDS[r]}</span>
+              <span className="sm:hidden">{roundShort(setup.entrants.length, r)}</span>
+              <span className="hidden sm:inline">{roundName(setup.entrants.length, r)}</span>
             </p>
             <div className="flex flex-1 flex-col justify-around gap-2">
               {matches.map((m) => (

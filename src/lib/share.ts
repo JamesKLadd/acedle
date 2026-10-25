@@ -4,7 +4,7 @@ import type { PlayerSeason } from "./data/types";
 import { fmtDate, fmtMult, fmtScore, fmtTopPercent } from "./format";
 import { revealTimeline } from "./reveal";
 import type { BadgeCategory, ScoreResult } from "./scoring/types";
-import { ROUNDS } from "./tournament";
+import { isChampion, roundCount, roundName, tierOf, tierPhrase, type RunResult } from "./tournament";
 
 export const CATEGORY_EMOJI: Record<BadgeCategory, string> = {
   titles: "🏆",
@@ -21,7 +21,7 @@ export const CATEGORY_EMOJI: Record<BadgeCategory, string> = {
  * 2015 Novak Djokovic (#1)
  * 🏆🏆🏆🏆🟫🟫🟫🟫🟫📈📈📈🎾🎾🎾🎾🎾🎾🎾🎾🎾🎾🚀🚀🚀🏆🏆🏆💎📈💎💎 ×191.41
  * 103,061,889 pts · top 0.03%
- * 🏆 Won the tournament        (once the roll's tournament is over)
+ * 🏆 Won the Grand Slam        (once the roll's tournament is over)
  *
  * The share button adds the roll's link as a last line.
  */
@@ -36,8 +36,8 @@ export function shareText({
   season: PlayerSeason;
   score: ScoreResult;
   topPercent: number;
-  /** Rounds won in the roll's finished tournament, if any. */
-  tournament?: number | null;
+  /** The roll's finished tournament, if any. */
+  tournament?: RunResult | null;
 }): string {
   // Same order as the reveal: points badges, then multipliers.
   const emoji = revealTimeline(score)
@@ -53,9 +53,10 @@ export function shareText({
   ].join("\n");
 }
 
-/** "🏆 Won the tournament", "🎾 Tournament: out in the semifinal" */
-export function tournamentLine(roundsWon: number): string {
-  if (roundsWon >= ROUNDS.length) return "🏆 Won the tournament";
-  if (roundsWon === ROUNDS.length - 1) return "🥈 Tournament: runner-up";
-  return `🎾 Tournament: out in the ${ROUNDS[roundsWon].toLowerCase()}`;
+/** "🏆 Won the Grand Slam", "🥈 500: runner-up", "🎾 1000: out in the semifinal" */
+export function tournamentLine(run: RunResult): string {
+  const tier = tierOf(run.tier);
+  if (isChampion(run)) return `🏆 Won ${tierPhrase(run.tier)}`;
+  if (run.roundsWon === roundCount(tier.size) - 1) return `🥈 ${tier.name}: runner-up`;
+  return `🎾 ${tier.name}: out in the ${roundName(tier.size, run.roundsWon).toLowerCase()}`;
 }

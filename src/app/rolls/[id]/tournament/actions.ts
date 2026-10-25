@@ -3,7 +3,7 @@
 import { secureRandom } from "@/lib/roll/daily";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { tournamentState } from "@/lib/tournament";
+import { isTierId, tournamentState, type TierId } from "@/lib/tournament";
 import { drawTournament } from "@/lib/tournament-draw";
 import { toStoredTournament, type StoredTournament } from "@/lib/tournament-store";
 
@@ -30,17 +30,19 @@ async function load(rollId: string): Promise<StoredTournament | null> {
 }
 
 /**
- * Enters the roll's player into a new draw, or returns the one already
- * started (one tournament per roll). Only the roll's owner can.
+ * Enters the roll's player into a new `tier` draw, or returns the one
+ * already started (one tournament per roll, whatever its tier). Only the
+ * roll's owner can.
  */
-export async function startTournament(rollId: string): Promise<TournamentResult> {
+export async function startTournament(rollId: string, tier: TierId): Promise<TournamentResult> {
   try {
+    if (!isTierId(tier)) return { ok: false, error: "Pick a tournament to enter." };
     const roll = await ownRoll(rollId);
     if (!roll) return { ok: false, error: "Only the player who rolled this can enter it." };
     const existing = await load(rollId);
     if (existing) return { ok: true, tournament: existing };
 
-    const setup = drawTournament(roll.season_snapshot, roll.score, secureRandom);
+    const setup = drawTournament(roll.season_snapshot, roll.score, tier, secureRandom);
     // A second tab may get there first; then keep its draw.
     const { error } = await createAdminClient()
       .from("tournaments")

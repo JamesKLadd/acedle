@@ -3,6 +3,7 @@
 
 import type { PlayerSeason } from "../data/types";
 import type { BadgeCategory, BadgeDef } from "../scoring/types";
+import type { RunResult } from "../tournament";
 
 /** The parts of a stored roll the profile pages show. */
 export interface RollSummary {
@@ -15,8 +16,8 @@ export interface RollSummary {
   country: string;
   finalRank: number;
   score: number;
-  /** Rounds won in the roll's finished tournament (4 = champion), if any. */
-  tournament?: number | null;
+  /** The roll's finished tournament, if any. */
+  tournament?: RunResult | null;
 }
 
 export function summarizeRolls(rolls: readonly RollSummary[]) {

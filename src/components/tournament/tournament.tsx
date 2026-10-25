@@ -8,7 +8,10 @@ import { flag } from "@/lib/flags";
 import { fmtScore } from "@/lib/format";
 import { sfx } from "@/lib/sound";
 import {
-  ROUNDS,
+  roundCount,
+  roundName,
+  tierFormat,
+  tierOf,
   tournamentState,
   winChance,
   type Entrant,
@@ -87,7 +90,7 @@ function YourRun({ setup, state }: { setup: TournamentSetup; state: TournamentSt
         return (
           <li key={m.round} className="flex items-center gap-2">
             <span className="w-24 shrink-0 text-xs font-semibold tracking-wide text-muted uppercase">
-              {ROUNDS[m.round]}
+              {roundName(setup.entrants.length, m.round)}
             </span>
             <span className="min-w-0 flex-1 truncate">
               <span
@@ -134,6 +137,9 @@ export function Tournament({
   const [error, setError] = useState<string | null>(null);
   const state = useMemo(() => tournamentState(setup, sets), [setup, sets]);
   const you = setup.entrants[setup.you];
+  const tier = tierOf(setup.tier);
+  const size = setup.entrants.length;
+  const lastRound = roundCount(size) - 1;
 
   // Switching between the draw and a match: bring its top into view if it is off screen.
   const root = useRef<HTMLDivElement>(null);
@@ -178,7 +184,7 @@ export function Tournament({
     const need = Math.ceil(m.bestOf / 2);
     if (w === need || l === need) {
       setDecided({ round: m.round, opponent: m.opponent, won: w, lost: l });
-      if (w === need && m.round === ROUNDS.length - 1) celebrate();
+      if (w === need && m.round === lastRound) celebrate();
     }
   }
 
@@ -225,7 +231,8 @@ export function Tournament({
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <Eyebrow>
-            {ROUNDS[m.round]} · best of {m.bestOf}
+            {tier.id ? `${tier.name} · ` : ""}
+            {roundName(size, m.round)} · best of {m.bestOf}
           </Eyebrow>
           <SetDots sets={mySets} bestOf={m.bestOf} />
         </div>
@@ -257,18 +264,25 @@ export function Tournament({
     return (
       <div className="flex flex-col gap-5">
         <Card className="flex flex-col gap-4">
+          {tier.id && (
+            <Eyebrow>
+              {tier.name} · {tierFormat(tier)}
+            </Eyebrow>
+          )}
           {over ? (
             <div className="flex items-center gap-3">
-              {state.roundsWon === ROUNDS.length ? (
+              {state.roundsWon === lastRound + 1 ? (
                 <Crown className="size-8 shrink-0 text-legendary" aria-hidden />
               ) : (
                 <Trophy className="size-8 shrink-0 text-subtle" aria-hidden />
               )}
               <div className="min-w-0">
                 <p className="font-display text-2xl leading-tight font-bold uppercase">
-                  {state.roundsWon === ROUNDS.length ? "Champion!" : `Out in the ${ROUNDS[state.round].toLowerCase()}`}
+                  {state.roundsWon === lastRound + 1
+                    ? "Champion!"
+                    : `Out in the ${roundName(size, state.round).toLowerCase()}`}
                 </p>
-                {champ && state.roundsWon !== ROUNDS.length && (
+                {champ && state.roundsWon !== lastRound + 1 && (
                   <p className="text-sm text-muted">
                     Won by <Name e={champ} className="font-semibold text-fg" />
                   </p>
@@ -279,10 +293,10 @@ export function Tournament({
             <div className="flex flex-wrap items-center gap-3">
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-muted">
-                  <Name e={you} className="font-semibold text-fg" /> is seed {you.seed} of 16.
+                  <Name e={you} className="font-semibold text-fg" /> is seed {you.seed} of {size}.
                 </p>
                 <p className="mt-0.5 text-sm text-muted">
-                  Next: {ROUNDS[state.current!.round]} vs{" "}
+                  Next: {roundName(size, state.current!.round)} vs{" "}
                   <Name e={setup.entrants[state.current!.opponent]} className="text-fg" />
                   {state.current!.won + state.current!.lost > 0 &&
                     ` (sets ${state.current!.won}–${state.current!.lost})`}
@@ -324,7 +338,8 @@ function MatchOver({
 }) {
   const won = decided.won > decided.lost;
   const opp = setup.entrants[decided.opponent];
-  const champion = won && decided.round === ROUNDS.length - 1;
+  const size = setup.entrants.length;
+  const champion = won && decided.round === roundCount(size) - 1;
   const next = state.current;
   return (
     <Card className={`flex flex-col items-center gap-3 py-8 text-center ${champion ? "border-legendary/70" : ""}`}>
@@ -334,7 +349,7 @@ function MatchOver({
         <Trophy className={`size-10 animate-pop ${won ? "text-accent-text" : "text-subtle"}`} aria-hidden />
       )}
       <p className="font-display text-3xl font-bold uppercase">
-        {champion ? "Champion!" : won ? "Match won" : `Out in the ${ROUNDS[decided.round].toLowerCase()}`}
+        {champion ? "Champion!" : won ? "Match won" : `Out in the ${roundName(size, decided.round).toLowerCase()}`}
       </p>
       <p className="text-muted">
         {won ? "Beat" : "Lost to"} <Name e={opp} className="font-semibold text-fg" />{" "}
@@ -347,7 +362,7 @@ function MatchOver({
         {won && next && (
           <button onClick={onNext} disabled={busy} className={buttonClass()}>
             <Play className="size-4" aria-hidden />
-            {ROUNDS[next.round]} vs {setup.entrants[next.opponent].name}
+            {roundName(size, next.round)} vs {setup.entrants[next.opponent].name}
           </button>
         )}
         <button

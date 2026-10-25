@@ -4,7 +4,7 @@ import { cache } from "react";
 
 import { createAdminClient } from "./supabase/admin";
 import type { Tables } from "./supabase/database.types";
-import type { TournamentSetup } from "./tournament";
+import type { RunResult, TournamentSetup } from "./tournament";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -16,7 +16,8 @@ export interface StoredTournament {
 }
 
 export const toStoredTournament = (row: Tables<"tournaments">): StoredTournament => ({
-  setup: { entrants: row.entrants, you: row.you, seed: Number(row.seed) },
+  // Rows from before the tiers migration have no tier column at all.
+  setup: { tier: row.tier ?? null, entrants: row.entrants, you: row.you, seed: Number(row.seed) },
   sets: row.sets,
   roundsWon: row.rounds_won,
 });
@@ -35,3 +36,7 @@ export const getTournament = cache(async (rollId: string): Promise<StoredTournam
   }
   return data && toStoredTournament(data);
 });
+
+/** A stored tournament's result, once its run is over. */
+export const runResult = (t: StoredTournament | null): RunResult | null =>
+  t && t.roundsWon !== null ? { tier: t.setup.tier, roundsWon: t.roundsWon } : null;

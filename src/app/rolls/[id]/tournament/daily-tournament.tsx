@@ -3,13 +3,15 @@
 import { Trophy } from "lucide-react";
 import { useState, useTransition } from "react";
 
+import { TierPicker } from "@/components/tournament/tier-picker";
 import { Tournament } from "@/components/tournament/tournament";
-import { buttonClass, Card } from "@/components/ui";
+import { Card } from "@/components/ui";
+import type { TierId } from "@/lib/tournament";
 import type { StoredTournament } from "@/lib/tournament-store";
 
 import { playSet, startTournament } from "./actions";
 
-/** A daily roll's tournament for its owner: the "enter" step, then the run, saved set by set. */
+/** A daily roll's tournament for its owner: picking one to enter, then the run, saved set by set. */
 export function DailyTournament({
   rollId,
   playerName,
@@ -21,6 +23,7 @@ export function DailyTournament({
 }) {
   const [tournament, setTournament] = useState(initial);
   const [pending, startTransition] = useTransition();
+  const [picked, setPicked] = useState<TierId | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (tournament) {
@@ -37,29 +40,29 @@ export function DailyTournament({
     );
   }
 
-  function enter() {
+  function enter(tier: TierId) {
     setError(null);
+    setPicked(tier);
     startTransition(async () => {
-      const result = await startTournament(rollId);
+      const result = await startTournament(rollId, tier);
       if (result.ok) setTournament(result.tournament);
       else setError(result.error);
     });
   }
 
   return (
-    <Card className="flex flex-col items-start gap-4">
-      <Trophy className="size-8 text-legendary" aria-hidden />
-      <div>
-        <p className="font-display text-2xl font-bold uppercase">Enter the draw</p>
-        <p className="mt-1 text-muted">
-          Take {playerName} into a 16-player draw of random player-seasons, seeded by score. Win your matches in a
-          timing game: best of 3 sets, the final best of 5. One run per daily roll.
-        </p>
+    <Card className="flex flex-col gap-4">
+      <div className="flex items-start gap-3">
+        <Trophy className="size-8 shrink-0 text-legendary" aria-hidden />
+        <div>
+          <p className="font-display text-2xl font-bold uppercase">Pick a tournament</p>
+          <p className="mt-1 text-muted">
+            Take {playerName} into a draw of random player-seasons, seeded by score, and win your matches in a timing
+            game. One tournament per daily roll, so choose well.
+          </p>
+        </div>
       </div>
-      <button onClick={enter} disabled={pending} className={buttonClass({ size: "lg" })}>
-        <Trophy className="size-5" aria-hidden />
-        {pending ? "Making the draw…" : "Enter the tournament"}
-      </button>
+      <TierPicker onPick={enter} pending={pending ? picked : null} />
       {error && <p className="text-sm text-red-500">{error}</p>}
     </Card>
   );

@@ -125,7 +125,7 @@ export function TimingGame({ chance, onResult }: { chance: number; onResult: (wo
           {center !== null && (
             // The lines sit inside the zone's edges: a ball on the line is in.
             <div
-              className={`absolute inset-y-1.5 border-x-[3px] border-white/90 transition-colors ${
+              className={`absolute inset-y-1.5 border-x-2 border-white transition-colors ${
                 phase === "out" ? "bg-[#34c759]/35" : "bg-[#34c759]/80"
               }`}
               style={{
@@ -137,7 +137,7 @@ export function TimingGame({ chance, onResult }: { chance: number; onResult: (wo
           {/* The court's centre line, for looks. */}
           <div className="absolute inset-y-3 left-1/2 w-px bg-white/15" />
           <div ref={ball} className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ left: "0%" }}>
-            <BallIcon className="size-8 drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]" />
+            <BallIcon className="size-4 drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]" />
           </div>
         </div>
       </div>

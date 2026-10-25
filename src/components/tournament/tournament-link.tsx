@@ -1,8 +1,8 @@
 import { ChevronRight, Crown, Trophy } from "lucide-react";
 import Link from "next/link";
 
-import { ROUNDS, runLabel, tournamentState } from "@/lib/tournament";
-import type { StoredTournament } from "@/lib/tournament-store";
+import { isChampion, roundName, runLabel, tierOf, tournamentState } from "@/lib/tournament";
+import { runResult, type StoredTournament } from "@/lib/tournament-store";
 
 /**
  * A roll's way into its tournament: enter it, continue it, or see how it
@@ -19,18 +19,20 @@ export function TournamentLink({
 }) {
   if (!tournament && !isOwner) return null;
   const state = tournament && tournamentState(tournament.setup, tournament.sets);
-  const champion = tournament?.roundsWon === ROUNDS.length;
+  const tier = tierOf(tournament?.setup.tier);
+  const run = runResult(tournament);
+  const champion = run !== null && isChampion(run);
 
   let title: string;
   let detail: string;
   if (!tournament || !state) {
     title = "Tournament mode";
-    detail = "Take this player into a 16-player draw and play for the title.";
+    detail = "Take this player into a 250, 500, 1000 or Grand Slam draw and play for the title.";
   } else if (state.current) {
-    title = `Tournament: ${ROUNDS[state.current.round]}`;
+    title = `${tier.name}: ${roundName(tier.size, state.current.round)}`;
     detail = `Next up: ${tournament.setup.entrants[state.current.opponent].name}. Continue your run.`;
   } else {
-    title = champion ? "Tournament champion" : `Tournament: ${runLabel(state.roundsWon ?? 0)}`;
+    title = champion ? `${tier.name} champion` : `${tier.name}: ${runLabel(state.roundsWon ?? 0, tier.size)}`;
     detail = "See the full draw.";
   }
 
