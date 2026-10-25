@@ -14,7 +14,7 @@
 // this on GitHub. ACEDLE_PHOTO_QUICK=1 only looks up each player's main
 // Wikidata image (a few dozen requests), for a quick first pass.
 
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse } from "csv-parse/sync";
 
@@ -285,25 +285,52 @@ async function candidatesFor(p: Player, category: string): Promise<Candidate[]> 
 
 // ---------------------------------------------------------------- main
 
+/** Days after which a player's photos are looked up again. */
+const FRESH_DAYS = Number(process.env.ACEDLE_PHOTO_FRESH_DAYS ?? 25);
+
 async function main() {
   // ACEDLE_PHOTO_PLAYERS=103819,104745 tries a few players and prints instead of writing.
   const only = process.env.ACEDLE_PHOTO_PLAYERS?.split(",").map(Number);
-  const players = loadPlayers().filter((p) => !only || only.includes(p.id));
-  console.log(`${players.length} players, ${players.filter((p) => p.wikidata).length} with Wikidata ids`);
-  const claims = await wikidataClaims(players.flatMap((p) => (p.wikidata ? [p.wikidata] : [])));
-
   const quick = process.env.ACEDLE_PHOTO_QUICK === "1";
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Incremental: start from the current file and look up the players checked
+  // longest ago (or never) first, saving as it goes, so a run that's cut
+  // short keeps its work and the next one carries on.
+  const out: PhotosFile =
+    !only && !quick && existsSync(OUT)
+      ? (JSON.parse(readFileSync(OUT, "utf8")) as PhotosFile)
+      : { fetched: today, players: {} };
+  out.checked ??= {};
+  const checked = out.checked;
+  const stale = (id: number) => {
+    const at = checked[id];
+    return !at || Date.now() - Date.parse(at) > FRESH_DAYS * 86_400_000;
+  };
+  const players = loadPlayers()
+    .filter((p) => (only ? only.includes(p.id) : quick || stale(p.id)))
+    .sort((a, b) => (checked[a.id] ?? "").localeCompare(checked[b.id] ?? ""));
+  console.log(`${players.length} players to look up, ${players.filter((p) => p.wikidata).length} with Wikidata ids`);
+  const claims = await wikidataClaims(players.flatMap((p) => (p.wikidata ? [p.wikidata] : [])));
   // Main images (P18) are looked up together up front.
   const mainImages = await fileInfos([
     ...new Set(players.flatMap((p) => (p.wikidata && claims.get(p.wikidata)?.image) || [])),
   ]);
-  const out: PhotosFile = { fetched: new Date().toISOString().slice(0, 10), players: {} };
+
+  const save = () => {
+    if (only) return;
+    // Stable output: players by id.
+    const sorted = <T>(o: Record<string, T>) => Object.fromEntries(Object.entries(o).sort(([a], [b]) => Number(a) - Number(b)));
+    writeFileSync(OUT, JSON.stringify({ ...out, fetched: today, players: sorted(out.players), checked: sorted(checked) }) + "\n");
+  };
+
   let done = 0;
   const started = Date.now();
   const stats = { players: 0, seasons: 0, sameSeason: 0 };
   await pool(players, async (p) => {
     const claim = p.wikidata ? claims.get(p.wikidata) : undefined;
     let candidates: Candidate[] = [];
+    let ok = true;
     try {
       if (claim?.category && !quick) candidates = await candidatesFor(p, claim.category);
       // The main Wikidata image is always in the running too.
@@ -311,6 +338,7 @@ async function main() {
       const main = page && toCandidate(page, null, p.lastName);
       if (main && !candidates.some((c) => c.file === main.file)) candidates.push(main);
     } catch (e) {
+      ok = false;
       console.warn(`  ${p.name}: ${e instanceof Error ? e.message : e}`);
     }
     const seasons = pickForSeasons(candidates, p.years);
@@ -327,17 +355,20 @@ async function main() {
       stats.players++;
       stats.seasons += Object.keys(seasons).length;
       stats.sameSeason += Object.entries(seasons).filter(([y, i]) => candidates[i].year === Number(y)).length;
+    } else if (ok) {
+      delete out.players[p.id];
     }
+    // A failed lookup keeps the player's old photos and is retried next run.
+    if (ok && !quick) checked[p.id] = today;
     if (++done % 10 === 0) {
+      save();
       const min = ((Date.now() - started) / 60000).toFixed(1);
       console.log(`  ${done}/${players.length} (${stats.players} with photos, ${min} min)`);
     }
   });
 
-  // Stable output: players by id.
-  out.players = Object.fromEntries(Object.entries(out.players).sort(([a], [b]) => Number(a) - Number(b)));
+  save();
   if (only) console.log(JSON.stringify(out.players, null, 1));
-  else writeFileSync(OUT, JSON.stringify(out) + "\n");
   const totalSeasons = players.reduce((n, p) => n + p.years.length, 0);
   console.log(
     `Photos for ${stats.players}/${players.length} players, ${stats.seasons}/${totalSeasons} seasons ` +

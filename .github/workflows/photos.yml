@@ -1,7 +1,8 @@
 # Looks up a photo for every player-season on Wikimedia Commons
 # (scripts/etl/photos.ts) and commits data/photos.json when it changed. The
 # push redeploys the app. Runs monthly (new seasons, new photos) and by hand
-# from the Actions tab. It's slow on purpose: one request at a time.
+# from the Actions tab. It's slow on purpose: one request at a time, and it
+# resumes where the last run stopped.
 
 name: Refresh player photos
 
@@ -36,11 +37,15 @@ jobs:
           key: sackmann-archive-v1
       - run: npm run data:fetch
 
+      # The script saves as it goes; stop it in time to commit what it has.
+      # The next run carries on with the players it didn't reach.
       - run: npm run data:photos
+        timeout-minutes: 200
         env:
           ACEDLE_PHOTO_PAUSE_MS: "300"
 
       - name: Commit changed photos
+        if: always()
         run: |
           git add data/photos.json
           if git diff --cached --quiet; then

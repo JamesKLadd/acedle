@@ -22,6 +22,8 @@ export interface PhotosFile {
   fetched: string;
   /** Photos by player id: their photos, and which one each season uses (by year). */
   players: Record<string, { photos: Photo[]; seasons: Record<string, number> }>;
+  /** When each player was last looked up in full, YYYY-MM-DD (the script resumes from these). */
+  checked?: Record<string, string>;
 }
 
 /** A season's photo, and whether it was taken that season. */
