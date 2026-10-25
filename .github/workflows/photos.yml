@@ -46,6 +46,8 @@ jobs:
       # The next run carries on with the players it didn't reach.
       - run: npm run data:photos
         timeout-minutes: 200
+        # Stopping at the time limit is expected; the run still commits.
+        continue-on-error: true
         env:
           ACEDLE_PHOTO_PAUSE_MS: "300"
           ACEDLE_PHOTO_MISSING_ONLY: ${{ inputs.missing_only && '1' || '' }}
