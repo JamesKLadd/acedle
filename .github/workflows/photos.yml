@@ -10,6 +10,11 @@ on:
   schedule:
     - cron: "41 7 3 * *"
   workflow_dispatch:
+    inputs:
+      missing_only:
+        description: "Only look up players who have no photo yet"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -43,6 +48,7 @@ jobs:
         timeout-minutes: 200
         env:
           ACEDLE_PHOTO_PAUSE_MS: "300"
+          ACEDLE_PHOTO_MISSING_ONLY: ${{ inputs.missing_only && '1' || '' }}
 
       - name: Commit changed photos
         if: always()

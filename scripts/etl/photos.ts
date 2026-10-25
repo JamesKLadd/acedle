@@ -103,11 +103,7 @@ function loadPlayers(): Player[] {
  * Commons category (P373) and main image (P18) for each Wikidata id, in one
  * SPARQL query (the entity API rate-limits batch lookups hard).
  */
-async function wikidataClaims(ids: string[]) {
-  const query = `SELECT ?item ?cat ?img WHERE {
-    VALUES ?item { ${ids.map((id) => `wd:${id}`).join(" ")} }
-    OPTIONAL { ?item wdt:P373 ?cat } OPTIONAL { ?item wdt:P18 ?img }
-  }`;
+async function sparql(query: string, attempt = 0): Promise<Json> {
   const res = await fetch(SPARQL, {
     method: "POST",
     headers: {
@@ -116,9 +112,40 @@ async function wikidataClaims(ids: string[]) {
       "content-type": "application/x-www-form-urlencoded",
     },
     body: new URLSearchParams({ query }),
-  });
-  if (!res.ok) throw new Error(`Wikidata query: HTTP ${res.status}`);
-  const body = (await res.json()) as Json;
+  }).catch(() => null);
+  const body = res?.ok ? ((await res.json().catch(() => null)) as Json | null) : null;
+  if (body) return body;
+  if (attempt >= 5) throw new Error(`Wikidata query: HTTP ${res?.status ?? "network error"}`);
+  await sleep(3000 * 2 ** attempt);
+  return sparql(query, attempt + 1);
+}
+
+/**
+ * Wikidata ids for players the Sackmann list has none for (mostly current
+ * players): the first male tennis player a name search finds.
+ */
+async function findWikidataIds(players: Player[]) {
+  for (const p of players.filter((p) => !p.wikidata)) {
+    const body = await sparql(`SELECT ?item WHERE {
+      SERVICE wikibase:mwapi {
+        bd:serviceParam wikibase:endpoint "www.wikidata.org"; wikibase:api "EntitySearch";
+          mwapi:search ${JSON.stringify(p.name)}; mwapi:language "en".
+        ?item wikibase:apiOutputItem mwapi:item. ?num wikibase:apiOrdinal true.
+      }
+      ?item wdt:P106 wd:Q10833314; wdt:P21 wd:Q6581097.
+    } ORDER BY ?num LIMIT 1`);
+    const item = body.results.bindings[0]?.item?.value;
+    if (item) p.wikidata = String(item).split("/").pop()!;
+    await sleep(PAUSE_MS);
+  }
+}
+
+async function wikidataClaims(ids: string[]) {
+  if (ids.length === 0) return new Map<string, { category: string | null; image: string | null }>();
+  const body = await sparql(`SELECT ?item ?cat ?img WHERE {
+    VALUES ?item { ${ids.map((id) => `wd:${id}`).join(" ")} }
+    OPTIONAL { ?item wdt:P373 ?cat } OPTIONAL { ?item wdt:P18 ?img }
+  }`);
   const out = new Map<string, { category: string | null; image: string | null }>();
   for (const b of body.results.bindings as Json[]) {
     const id = String(b.item.value).split("/").pop()!;
@@ -312,9 +339,14 @@ async function main() {
     const at = checked[id];
     return !at || Date.now() - Date.parse(at) > FRESH_DAYS * 86_400_000;
   };
+  // ACEDLE_PHOTO_MISSING_ONLY=1 looks up just the players without a photo, however recently checked.
+  const missingOnly = process.env.ACEDLE_PHOTO_MISSING_ONLY === "1";
   const players = loadPlayers()
-    .filter((p) => (only ? only.includes(p.id) : quick || stale(p.id)))
+    .filter((p) =>
+      only ? only.includes(p.id) : missingOnly ? !out.players[p.id] : quick || stale(p.id),
+    )
     .sort((a, b) => (checked[a.id] ?? "").localeCompare(checked[b.id] ?? ""));
+  await findWikidataIds(players);
   console.log(`${players.length} players to look up, ${players.filter((p) => p.wikidata).length} with Wikidata ids`);
   const claims = await wikidataClaims(players.flatMap((p) => (p.wikidata ? [p.wikidata] : [])));
   // Main images (P18) are looked up together up front.

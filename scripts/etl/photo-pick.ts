@@ -78,12 +78,14 @@ export function photoTraits(file: string, about = "", lastName = ""): Traits {
 
 /** How well a photo crops into the card's window; null if unusable. */
 export function photoScore(p: Photo & { mime: string }): number | null {
-  if (p.mime !== "image/jpeg") return null;
+  if (p.mime !== "image/jpeg" && p.mime !== "image/png") return null;
   if (Math.min(p.width, p.height) < 300) return null;
   if (NOT_A_PORTRAIT.test(fold(p.file))) return null;
   let score = 0;
   // Crops are usually tight on one player, like a card photo.
   if (/\(cropped\)|\bcrop/i.test(p.file)) score += 1;
+  // PNGs are more often graphics than photos.
+  if (p.mime === "image/png") score -= 2;
   // Card photos are portrait: upright or square photos crop best.
   const ratio = p.height / p.width;
   if (ratio >= 0.9) score += 2;

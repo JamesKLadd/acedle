@@ -43,7 +43,8 @@ describe("photoScore", () => {
     expect(upright).toBeGreaterThan(wide);
     expect(photoScore({ ...photo({ file: "Federer signature.jpg" }), mime: "image/jpeg" })).toBeNull();
     expect(photoScore({ ...photo({ file: "Lógó Roger Federer.jpg" }), mime: "image/jpeg" })).toBeNull();
-    expect(photoScore({ ...photo({}), mime: "image/png" })).toBeNull();
+    expect(photoScore({ ...photo({}), mime: "image/png" })).toBeLessThan(upright);
+    expect(photoScore({ ...photo({}), mime: "image/gif" })).toBeNull();
   });
 });
 
