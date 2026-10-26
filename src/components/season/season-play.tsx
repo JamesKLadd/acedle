@@ -22,6 +22,7 @@ import {
 } from "@/lib/season/season";
 import { addPracticeSet, clearPractice } from "@/lib/season/practice";
 import { seasonShareText } from "@/lib/season/share";
+import { newHeadlines, seasonStories, type Headline, type SeasonStories } from "@/lib/season/stories";
 import type { StoredSeason } from "@/lib/season/store";
 import { sfx } from "@/lib/sound";
 import { tournamentState } from "@/lib/tournament";
@@ -30,6 +31,7 @@ import { COURT_COLOR, COURT_LABEL } from "./court";
 import { FinalsBoard } from "./finals-board";
 import { RaceTable } from "./race-table";
 import { SeasonCalendar } from "./season-calendar";
+import { HeadlineList, Recap, Rivalries, Storylines } from "./storylines";
 
 const pct = (p: number) => `${Math.round(p * 100)}%`;
 const signed = (p: number) => `${p >= 0 ? "+" : "−"}${Math.round(Math.abs(p) * 100)}%`;
@@ -47,6 +49,8 @@ interface Decided {
   /** The season's first lost match: no perfect season. */
   firstLoss: boolean;
   next: CurrentMatch | null;
+  /** Storylines the match added. */
+  news: Headline[];
 }
 
 /**
@@ -102,6 +106,7 @@ export function SeasonPlay({
   const [saving, setSaving] = useState<{ expected: number; won: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const state = useMemo(() => seasonState(setup, sets), [setup, sets]);
+  const stories = useMemo(() => seasonStories(state), [state]);
   const playable = !readOnly && status === "active";
   const top = useRef<HTMLDivElement>(null);
   const store = useMemo(() => saver(season.id, practice), [season.id, practice]);
@@ -156,6 +161,8 @@ export function SeasonPlay({
       eventResult,
       firstLoss: w < need && state.record.losses === 0,
       next: after.current,
+      // The screen already says when it's a title.
+      news: newHeadlines(stories.headlines, seasonStories(after).headlines).filter((h) => h.kind !== "title"),
     });
     if (eventResult?.title) celebrate();
   }
@@ -201,6 +208,7 @@ export function SeasonPlay({
           share={!readOnly && !practice && sets.length > 0 ? seasonShareText(state, setup.you) : null}
           onGiveUp={store.abandon}
           state={state}
+          stories={stories}
           status={status}
           playable={playable}
           selected={selected ?? state.current?.event ?? lastPlayed(state)}
@@ -329,6 +337,7 @@ function Overview({
   share,
   onGiveUp,
   state,
+  stories,
   status,
   playable,
   selected,
@@ -342,6 +351,7 @@ function Overview({
   share: string | null;
   onGiveUp: () => Promise<Saved>;
   state: SeasonState;
+  stories: SeasonStories;
   status: StoredSeason["status"];
   playable: boolean;
   selected: number;
@@ -355,12 +365,14 @@ function Overview({
     <>
       {error}
       {status === "active" && match && playable && <NextMatch state={state} match={match} sets={null} onPlay={onPlay} />}
-      {state.done && <SeasonOver state={state} />}
+      {state.done && <SeasonOver state={state} stories={stories} />}
       {share && (
         <div className="-mt-2">
           <ShareButton text={share} path={`/seasons/${seasonId}`} />
         </div>
       )}
+
+      <Storylines headlines={stories.headlines} />
 
       <section>
         <SectionTitle className="mb-3">Calendar</SectionTitle>
@@ -368,7 +380,7 @@ function Overview({
       </section>
 
       <section>
-        <EventDetail state={state} index={selected} />
+        <EventDetail state={state} index={selected} headlines={stories.headlines.filter((h) => h.event === selected)} />
       </section>
 
       <section>
@@ -379,23 +391,32 @@ function Overview({
         <RaceTable race={state.race} />
       </section>
 
+      <Rivalries rivalries={stories.rivalries} nemesis={stories.nemesis} />
+
       {playable && <GiveUp onGiveUp={onGiveUp} onAbandoned={onAbandoned} />}
     </>
   );
 }
 
 /** The event picked on the calendar: its draw (or the Finals) and the player's result. */
-function EventDetail({ state, index }: { state: SeasonState; index: number }) {
+function EventDetail({ state, index, headlines }: { state: SeasonState; index: number; headlines: Headline[] }) {
   const event = CALENDAR[index];
   const heading = (
-    <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-      <SectionTitle>{event.name}</SectionTitle>
-      <span className="flex items-center gap-1.5 text-xs font-semibold text-muted">
-        <span className="size-2.5 rounded-full" style={{ background: COURT_COLOR[event.court] }} />
-        {COURT_LABEL[event.court]} ·{" "}
-        {event.kind === "slam" ? "32 players, best of 5" : event.kind === "masters" ? "16 players, best of 3" : "Top 8, best of 3"}
-      </span>
-    </div>
+    <>
+      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <SectionTitle>{event.name}</SectionTitle>
+        <span className="flex items-center gap-1.5 text-xs font-semibold text-muted">
+          <span className="size-2.5 rounded-full" style={{ background: COURT_COLOR[event.court] }} />
+          {COURT_LABEL[event.court]} ·{" "}
+          {event.kind === "slam" ? "32 players, best of 5" : event.kind === "masters" ? "16 players, best of 3" : "Top 8, best of 3"}
+        </span>
+      </div>
+      {headlines.length > 0 && (
+        <div className="mb-3">
+          <HeadlineList headlines={headlines} />
+        </div>
+      )}
+    </>
   );
 
   if (event.kind === "finals") {
@@ -442,7 +463,7 @@ function EventDetail({ state, index }: { state: SeasonState; index: number }) {
   );
 }
 
-function SeasonOver({ state }: { state: SeasonState }) {
+function SeasonOver({ state, stories }: { state: SeasonState; stories: SeasonStories }) {
   const titles = CALENDAR.filter((e) => state.titles.includes(e.id));
   return (
     <Card className={`flex flex-col items-center gap-2 py-8 text-center ${state.perfect ? "border-legendary/70" : ""}`}>
@@ -457,6 +478,9 @@ function SeasonOver({ state }: { state: SeasonState }) {
         {fmtPts(state.points)} of {fmtPts(MAX_POINTS)} points
       </p>
       {titles.length > 0 && <p className="max-w-md text-sm text-muted">Won {titles.map((e) => e.name).join(", ")}.</p>}
+      <div className="mt-4 flex w-full justify-center border-t-2 border-dashed border-line px-2 pt-5">
+        <Recap recap={stories.recap} />
+      </div>
     </Card>
   );
 }
@@ -671,7 +695,14 @@ function MatchOver({
         </p>
       )}
       {result?.title && <p className="text-sm text-muted">+{fmtPts(result.points)} points</p>}
-      {decided.firstLoss && <p className="text-sm font-semibold text-accent-text">That&apos;s the first loss: no perfect season this time.</p>}
+      {decided.firstLoss && !decided.news.some((h) => h.kind === "first-loss") && (
+        <p className="text-sm font-semibold text-accent-text">That&apos;s the first loss: no perfect season this time.</p>
+      )}
+      {decided.news.length > 0 && (
+        <div className="w-full max-w-md rounded-md border-2 border-line bg-surface-2/50 px-4 py-3 text-left">
+          <HeadlineList headlines={decided.news} />
+        </div>
+      )}
       {error}
       <div className="mt-2 flex flex-wrap justify-center gap-3">
         {next && (

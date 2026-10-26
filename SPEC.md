@@ -254,6 +254,33 @@ After a roll, the player can take the rolled player-season into a tournament (`s
 - **Daily rolls:** one tournament per roll, saved: the draw, its seed and each set as it's played (a lost set can't be replayed). The result (rounds won, 4 = champion) shows on the roll page, in the share text and in the roll history. It never changes scores or leaderboards. Other people can see a roll's finished draw at `/rolls/[id]/tournament`.
 - **Sandbox:** the same game, with nothing saved (`GET /api/sandbox/tournament?year=&player=` makes the draw).
 
+### 5.2 Season mode
+
+A card can also play a full season (`src/lib/season/`): today's calendar of
+4 Slams and 9 Masters against a field of 40 rivals (ranked 1–50, any year),
+then the ATP Finals for the top 8 in the race. Odds are court-adjusted, with
+form and fatigue; each event is seeded by race points (card score for the
+first). Like a tournament, a season is its setup plus the player's sets, and
+everything else is replayed from those (`seasonState`), including a log of
+the player's matches with the odds they had going in.
+
+**Storylines** (`stories.ts`) are worked out from that state, so every
+season has them, old ones included:
+- **Headlines** per event, up to three, most important first: titles, the
+  Calendar Slam, the first loss, revenge on a rival who beat the player
+  earlier, a rival beating them again, upsets (won at 35% or less) and shocks
+  (lost at 70% or more), winning streaks every 10, the race lead and the
+  Finals places, rivals winning several titles, and the year-end place.
+- **Rivalries:** the record against each rival met; the one who beat the
+  player most (at least twice) is the nemesis.
+- **Recap** once it's over: biggest upset, toughest loss, longest streak,
+  nemesis, top rival, and the record and points on each court.
+
+The season page shows the latest storylines, each event's own headlines, the
+ones a match just added, the rivalries and the recap. A finished season's
+share text adds its upset (35% or less) and nemesis, and the link preview
+shows one storyline.
+
 ---
 
 ## 6. Architecture

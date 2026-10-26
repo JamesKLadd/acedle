@@ -6,6 +6,7 @@ import { OG, OG_SIZE, OgChip, OgFrame, ogFonts, ogImageData } from "@/lib/og";
 import { getSharedRoll } from "@/lib/roll/shared";
 import { seasonState } from "@/lib/season/season";
 import { eventEmoji } from "@/lib/season/share";
+import { pct, seasonStories, UPSET_ODDS, who } from "@/lib/season/stories";
 import { getSeason } from "@/lib/season/store";
 import { getSeasonPhoto } from "@/lib/season-photo";
 
@@ -47,6 +48,16 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const squares = [...state.knockouts, state.finals].map(eventEmoji);
   const titles = state.titles.length;
   const status = season.status === "abandoned" ? "UNFINISHED" : state.done ? "FINAL RECORD" : "IN PROGRESS";
+  // One storyline: a finished season's upset or nemesis, else the latest about the player (or the tour).
+  const { headlines, recap } = seasonStories(state);
+  const latest = [...headlines].sort((a, b) => b.event - a.event);
+  const storyline = state.done
+    ? recap.biggestUpset && recap.biggestUpset.odds <= UPSET_ODDS
+      ? `Biggest upset: beat ${who(recap.biggestUpset.opponent)} at ${pct(recap.biggestUpset.odds)}`
+      : recap.nemesis
+        ? `Nemesis: ${who(recap.nemesis.rival)}, ${recap.nemesis.wins}–${recap.nemesis.losses}`
+        : null
+    : ((latest.find((h) => h.tone !== "info") ?? latest[0])?.text ?? null);
 
   return new ImageResponse(
     (
@@ -125,6 +136,21 @@ export default async function Image({ params }: { params: Promise<{ id: string }
                 />
               ))}
             </div>
+            {storyline && (
+              <div
+                style={{
+                  display: "block",
+                  marginTop: 16,
+                  fontSize: 24,
+                  color: OG.muted,
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {storyline}
+              </div>
+            )}
             <div
               style={{
                 display: "flex",

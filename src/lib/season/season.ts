@@ -167,6 +167,20 @@ export interface RaceEntry {
   points: number;
 }
 
+/** One of the player's finished matches. */
+export interface PlayedMatch {
+  /** Index in CALENDAR. */
+  event: number;
+  /** "Round of 32", "Group stage", "Semifinal"… */
+  round: string;
+  opponent: Rival;
+  won: boolean;
+  /** The player's sets, in order (true = won). */
+  sets: boolean[];
+  /** The player's chance going into the match (score, court, form and fatigue). */
+  odds: number;
+}
+
 /** The player's next match. */
 export interface CurrentMatch {
   /** Index in CALENDAR. */
@@ -190,6 +204,8 @@ export interface SeasonState {
   points: number;
   /** Everyone's points so far, most first. */
   race: RaceEntry[];
+  /** The player's finished matches, in order. */
+  matches: PlayedMatch[];
   /** The player's form going into their next match, in log-odds (−FORM_MAX to FORM_MAX). */
   form: number;
   /** No match lost (so far). */
@@ -219,6 +235,14 @@ function playSets(sets: readonly boolean[], cursor: number, bestOf: number) {
   return { played, won, lost, over: won === need || lost === need, youWon: won === need };
 }
 
+/** Race points from a finished knockout event, by player id: each entrant's for how far they got. */
+export function eventPoints(event: SeasonEvent, draw: TournamentSetup, state: TournamentState): Map<number, number> {
+  const table = POINTS[event.kind as "slam" | "masters"];
+  const won = new Map<number, number>();
+  for (const m of state.rounds.flat()) if (m.winner !== null) won.set(m.winner, (won.get(m.winner) ?? 0) + 1);
+  return new Map(draw.entrants.map((e, idx) => [e.playerId, table[won.get(idx) ?? 0]]));
+}
+
 /** The whole season after the player's `sets` (true = set won), in order. */
 export function seasonState(setup: SeasonSetup, sets: readonly boolean[]): SeasonState {
   const { you } = setup;
@@ -231,6 +255,7 @@ export function seasonState(setup: SeasonSetup, sets: readonly boolean[]): Seaso
   let wins = 0;
   let losses = 0;
   const titles: string[] = [];
+  const matches: PlayedMatch[] = [];
   let current: CurrentMatch | null = null;
 
   const knockouts: KnockoutView[] = [];
@@ -249,13 +274,26 @@ export function seasonState(setup: SeasonSetup, sets: readonly boolean[]): Seaso
 
     // The player's matches, in order: form and fatigue follow them.
     let setsHere = 0;
-    for (const m of state.rounds.flat().filter((x) => x.sets !== null)) {
-      setsHere += m.sets!.length;
-      if (m.winner === null) continue;
-      const won = m.winner === draw.you;
-      if (won) wins++;
-      else losses++;
-      form = nextForm(form, won);
+    for (const [r, round] of state.rounds.entries()) {
+      for (const m of round) {
+        if (m.sets === null) continue;
+        const setsBefore = setsHere;
+        setsHere += m.sets.length;
+        if (m.winner === null) continue;
+        const won = m.winner === draw.you;
+        const opponent = draw.entrants[m.a === draw.you ? m.b! : m.a!] as Entrant & Rival;
+        matches.push({
+          event: CALENDAR.indexOf(event),
+          round: roundLabel(size, r),
+          opponent,
+          won,
+          sets: m.sets,
+          odds: matchOdds(you, opponent, event.court, form, fatigueAfter(setsBefore)).total,
+        });
+        if (won) wins++;
+        else losses++;
+        form = nextForm(form, won);
+      }
     }
 
     if (state.current) {
@@ -275,10 +313,8 @@ export function seasonState(setup: SeasonSetup, sets: readonly boolean[]): Seaso
 
     // Over: everyone's points for how far they got.
     const table = POINTS[event.kind as "slam" | "masters"];
-    const won = new Map<number, number>();
-    for (const m of state.rounds.flat()) if (m.winner !== null) won.set(m.winner, (won.get(m.winner) ?? 0) + 1);
-    draw.entrants.forEach((e, idx) => award(e.playerId, table[won.get(idx) ?? 0]));
-    const yourWins = won.get(draw.you) ?? 0;
+    for (const [playerId, pts] of eventPoints(event, draw, state)) award(playerId, pts);
+    const yourWins = state.roundsWon ?? 0;
     const title = state.champion === draw.you;
     if (title) titles.push(event.id);
     knockouts.push({
@@ -310,6 +346,7 @@ export function seasonState(setup: SeasonSetup, sets: readonly boolean[]): Seaso
     form = played.form;
     wins += played.wins;
     losses += played.losses;
+    matches.push(...played.matches);
     for (const [place, pts] of played.points) award(field[place].playerId, pts);
     if (played.current) current = played.current;
     if (played.view.champion !== null && played.view.champion === youAt) titles.push(FINALS.id);
@@ -325,6 +362,7 @@ export function seasonState(setup: SeasonSetup, sets: readonly boolean[]): Seaso
     titles,
     points: pointsOf.get(you.playerId) ?? 0,
     race,
+    matches,
     form,
     perfect: losses === 0,
     calendarSlam: KNOCKOUTS.filter((e) => e.kind === "slam").every((e) => titles.includes(e.id)),
@@ -399,6 +437,7 @@ function playFinals(
     losses: 0,
     setsHere: 0,
     current: null as CurrentMatch | null,
+    matches: [] as PlayedMatch[],
   };
   let n = 0;
 
@@ -416,11 +455,12 @@ function playFinals(
     // The player's later matches wait for their current one.
     if (run.current) return { a, b, winner: null, score: null, sets: [] };
     const result = playSets(sets, run.cursor, FINALS_BEST_OF);
+    const setsBefore = run.setsHere;
     run.cursor += result.played.length;
     run.setsHere += result.played.length;
     const youAreA = a === youAt;
+    const opponent = field[youAreA ? b : a];
     if (!result.over) {
-      const opponent = field[youAreA ? b : a];
       run.current = {
         event: CALENDAR.length - 1,
         round,
@@ -432,6 +472,14 @@ function playFinals(
       };
       return { a, b, winner: null, score: null, sets: result.played };
     }
+    run.matches.push({
+      event: CALENDAR.length - 1,
+      round,
+      opponent,
+      won: result.youWon,
+      sets: result.played,
+      odds: matchOdds(setup.you, opponent, FINALS.court, run.form, fatigueAfter(setsBefore)).total,
+    });
     run.form = nextForm(run.form, result.youWon);
     if (result.youWon) run.wins++;
     else run.losses++;
