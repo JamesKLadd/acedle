@@ -524,3 +524,22 @@ function standings(group: FinalsGroup, complete: boolean): GroupStanding[] {
     return share(y) - share(x) || x.player - y.player;
   });
 }
+
+/** What a season's row keeps up to date as it's played (listings, the leaderboard). */
+export interface SeasonSummary {
+  wins: number;
+  losses: number;
+  titles: number;
+  points: number;
+  calendarSlam: boolean;
+  finished: boolean;
+}
+
+export const seasonSummary = (s: SeasonState): SeasonSummary => ({
+  wins: s.record.wins,
+  losses: s.record.losses,
+  titles: s.titles.length,
+  points: s.points,
+  calendarSlam: s.calendarSlam,
+  finished: s.done,
+});

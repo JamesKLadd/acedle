@@ -4,6 +4,7 @@
 
 import type { PlayerSeason } from "../data/types";
 import type { EarnedBadge } from "../scoring/types";
+import type { SeasonSetup } from "../season/season";
 import type { Entrant, TierId } from "../tournament";
 
 export type Database = {
@@ -198,6 +199,33 @@ export type Database = {
         Update: { user_id?: string };
         Relationships: [];
       };
+      seasons: {
+        Row: {
+          id: string;
+          roll_id: string;
+          year: number;
+          player_id: number;
+          player_name: string;
+          setup: SeasonSetup;
+          sets: boolean[];
+          status: "active" | "finished" | "abandoned";
+          wins: number;
+          losses: number;
+          titles: number;
+          points: number;
+          calendar_slam: boolean;
+          created_at: string;
+          updated_at: string;
+          finished_at: string | null;
+        };
+        Insert: never;
+        Update: {
+          status?: "active" | "finished" | "abandoned";
+          updated_at?: string;
+          finished_at?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       user_badges: {
@@ -214,6 +242,25 @@ export type Database = {
     Functions: {
       create_profile_and_claim: {
         Args: { p_user_id: string; p_handle: string; p_avatar_url: string | null; p_guest_id?: string | null };
+        Returns: boolean;
+      };
+      season_start: {
+        Args: { p_roll_id: string; p_setup: SeasonSetup };
+        /** The new season's id; null if the card's owner already has one in progress. */
+        Returns: string | null;
+      };
+      season_add_set: {
+        Args: {
+          p_id: string;
+          p_expected: number;
+          p_won: boolean;
+          p_wins: number;
+          p_losses: number;
+          p_titles: number;
+          p_points: number;
+          p_calendar_slam: boolean;
+          p_finished: boolean;
+        };
         Returns: boolean;
       };
       tournament_add_set: {
