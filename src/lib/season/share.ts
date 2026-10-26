@@ -1,10 +1,10 @@
 // Wordle-style share text for a season.
 
 import { fmtScore } from "../format";
-import type { EventResult, EventStatus, Rival, SeasonState } from "./season";
+import type { EventResult, Rival, SeasonState } from "./season";
 
 /** One emoji per event: 🏆 title, 🥈 final, 🥉 semifinal, 🎾 out earlier, ⬜ not played (yet). */
-export function eventEmoji({ status, result }: { status: EventStatus; result: EventResult | null }): string {
+export function eventEmoji({ result }: { result: EventResult | null }): string {
   if (!result) return "⬜";
   if (result.title) return "🏆";
   if (result.label === "Final") return "🥈";
