@@ -35,6 +35,11 @@ export interface SlamResult {
   round: SlamRound;
 }
 
+export interface SurfaceRecord {
+  wins: number;
+  losses: number;
+}
+
 export interface ServeStats {
   /** Matches that had serve stats recorded (1991+). */
   matches: number;
@@ -105,6 +110,11 @@ export interface PlayerSeason {
     longestStreak: number;
     /** Longest match won, in minutes (null if no durations recorded). */
     longestWinMinutes: number | null;
+    /**
+     * Wins and losses on each surface played (walkovers left out). Missing
+     * from rolls saved before it was added.
+     */
+    bySurface?: Partial<Record<Surface, SurfaceRecord>>;
   };
 
   serve: ServeStats | null;

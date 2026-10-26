@@ -76,6 +76,23 @@ describe("season data", () => {
     expect([s.matches.wins, s.matches.losses]).toEqual([16, 22]);
   });
 
+  it("splits every season's wins and losses by surface", () => {
+    for (const s of [...loadSeasons().values()].flat()) {
+      const records = Object.values(s.matches.bySurface ?? {});
+      const sum = (k: "wins" | "losses") => records.reduce((n, r) => n + r[k], 0);
+      expect([sum("wins"), sum("losses")], `${s.year} ${s.name}`).toEqual([s.matches.wins, s.matches.losses]);
+    }
+  });
+
+  it("Nadal 2008 on clay and Sampras 1995 on clay and grass", () => {
+    expect(season(2008, "Rafael Nadal").matches.bySurface?.Clay).toEqual({ wins: 24, losses: 1 });
+    const sampras = season(1995, "Pete Sampras").matches.bySurface;
+    expect([sampras?.Clay, sampras?.Grass]).toEqual([
+      { wins: 7, losses: 5 },
+      { wins: 12, losses: 0 },
+    ]);
+  });
+
   it("canonicalizes title codes across padding changes", () => {
     expect(season(2025, "Jannik Sinner").defendedTitles).toEqual(expect.arrayContaining(["580", "605"]));
   });

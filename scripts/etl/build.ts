@@ -16,6 +16,7 @@ import type {
   ServeStats,
   SlamResult,
   Surface,
+  SurfaceRecord,
   TitleRecord,
 } from "../../src/lib/data/types";
 import { FIRST_YEAR, LAST_YEAR, POOL_SIZE } from "../../src/lib/data/years";
@@ -339,6 +340,7 @@ interface Accumulator {
   streak: number;
   longestStreak: number;
   longestWinMinutes: number | null;
+  bySurface: Partial<Record<Surface, SurfaceRecord>>;
   serve: ServeStats;
 }
 
@@ -360,6 +362,7 @@ function newAccumulator(): Accumulator {
     streak: 0,
     longestStreak: 0,
     longestWinMinutes: null,
+    bySurface: {},
     serve: {
       matches: 0,
       aces: 0,
@@ -535,6 +538,13 @@ function main() {
     const score = parseScore(m.score);
     if (score.walkover) continue;
 
+    for (const [side, k] of [["w", wk], ["l", lk]] as const) {
+      if (!wanted[side] || !m.surface) continue;
+      const record = (get(k).bySurface[m.surface] ??= { wins: 0, losses: 0 });
+      if (side === "w") record.wins++;
+      else record.losses++;
+    }
+
     if (wanted.w) {
       const a = get(wk);
       a.wins++;
@@ -654,6 +664,7 @@ function main() {
           tiebreaksPlayed: a.tiebreaksPlayed,
           longestStreak: a.longestStreak,
           longestWinMinutes: a.longestWinMinutes,
+          bySurface: a.bySurface,
         },
         serve: a.serve.matches > 0 ? a.serve : null,
       };
