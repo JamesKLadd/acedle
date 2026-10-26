@@ -50,7 +50,7 @@ export function SuggestForm({ playerId, year, name }: { playerId: number; year: 
           {pending ? "Checking…" : "Suggest photo"}
         </button>
         {state && (
-          <p role="status" className={`text-sm ${state.ok ? "font-semibold text-cat-surface" : "text-accent-text"}`}>
+          <p role="status" className={`text-sm ${state.ok ? "font-semibold text-cat-matches" : "text-accent-text"}`}>
             {state.message}
           </p>
         )}

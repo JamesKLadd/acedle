@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { RollCard } from "@/components/roll-card";
+import { SeasonLink } from "@/components/season/season-link";
 import { ShareButton } from "@/components/share-button";
 import { TournamentLink } from "@/components/tournament/tournament-link";
 import { buttonClass } from "@/components/ui";
@@ -80,8 +81,9 @@ async function RollDetail({
           </Link>
         )}
       </div>
-      <div className="mt-4">
+      <div className="mt-4 flex flex-col gap-4">
         <TournamentLink rollId={roll.id} tournament={tournament} isOwner={isOwner} />
+        <SeasonLink rollId={roll.id} ownerId={shared.ownerId} isOwner={isOwner} />
       </div>
     </>
   );

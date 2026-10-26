@@ -2,7 +2,7 @@ import type { Tables } from "@/lib/supabase/database.types";
 
 const STATUS = {
   pending: ["Waiting for review", "border-subtle text-muted"],
-  approved: ["On the card", "border-cat-surface text-cat-surface"],
+  approved: ["On the card", "border-cat-matches text-cat-matches"],
   rejected: ["Not used", "border-accent text-accent-text"],
 } as const;
 

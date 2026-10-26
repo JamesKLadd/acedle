@@ -70,7 +70,7 @@ export function eventDraw(setup: SeasonSetup, i: number): TournamentSetup {
 const courtsOf = (e: Entrant) => (e as Entrant & { courts: CourtFactors }).courts;
 
 /** How the matches of a knockout event are played. */
-function rules(event: SeasonEvent) {
+export function eventRules(event: SeasonEvent) {
   const { bestOf } = FORMAT[event.kind as "slam" | "masters"];
   return {
     bestOf: () => bestOf,
@@ -227,7 +227,7 @@ export function seasonState(setup: SeasonSetup, sets: readonly boolean[]): Seaso
     }
 
     if (i > 0) form = formAtNextEvent(form);
-    const state = tournamentState(draw, sets.slice(cursor), rules(event));
+    const state = tournamentState(draw, sets.slice(cursor), eventRules(event));
     cursor += state.setsUsed;
     const size = draw.entrants.length;
 

@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { NextRollCountdown, RememberRoll } from "@/components/countdown";
 import { RollCard } from "@/components/roll-card";
+import { SeasonLink } from "@/components/season/season-link";
 import { ShareButton } from "@/components/share-button";
 import { TotalScore } from "@/components/total-score";
 import { TournamentLink } from "@/components/tournament/tournament-link";
@@ -128,8 +129,9 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
               </Link>
             )}
           </div>
-          <div className="mt-4">
+          <div className="mt-4 flex flex-col gap-4">
             <TournamentLink rollId={roll.id} tournament={tournament} isOwner />
+            <SeasonLink rollId={roll.id} ownerId={userId!} isOwner />
           </div>
           <div className="mt-4 flex items-center gap-2 rounded-md border-2 border-line bg-surface shadow-[3px_3px_0_0_var(--line)] px-4 py-3 text-sm text-muted">
             <Timer className="size-4 shrink-0 text-accent-text" aria-hidden />

@@ -174,3 +174,28 @@ export async function abandonSeason(db: Db, userId: string, id: string): Promise
   }
   return { ok: true, season: (await load(db, id))! };
 }
+
+/** A card's seasons, newest first (none if they can't be read). */
+export const seasonsOfRoll = cache(async (rollId: string): Promise<StoredSeason[]> => {
+  if (!UUID.test(rollId)) return [];
+  const { data, error } = await createAdminClient()
+    .from("seasons")
+    .select("*")
+    .eq("roll_id", rollId)
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.error(`Couldn't load the card's seasons: ${error.message}`);
+    return [];
+  }
+  return data.map(toStoredSeason);
+});
+
+/** The season `userId` has in progress, if any (null if it can't be read). */
+export const getActiveSeason = cache(async (userId: string): Promise<StoredSeason | null> => {
+  try {
+    return await activeSeasonOf(createAdminClient(), userId);
+  } catch (e) {
+    console.error(`Couldn't load the season in progress: ${e instanceof Error ? e.message : e}`);
+    return null;
+  }
+});

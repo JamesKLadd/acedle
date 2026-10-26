@@ -59,7 +59,7 @@ function Contender({ e, label, odds }: { e: Entrant; label: string; odds: number
   );
 }
 
-function SetDots({ sets, bestOf }: { sets: readonly boolean[]; bestOf: number }) {
+export function SetDots({ sets, bestOf }: { sets: readonly boolean[]; bestOf: number }) {
   return (
     <span
       className="flex items-center gap-1.5"

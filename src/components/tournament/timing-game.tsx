@@ -141,8 +141,10 @@ export function TimingGame({ chance, onResult }: { chance: number; onResult: (wo
   return (
     <div
       onPointerDown={(e) => {
-        // Keeps the release coming here even if the finger slides off.
-        e.currentTarget.setPointerCapture?.(e.pointerId);
+        // Keeps the release coming here even if the finger slides off (when the pointer is still down).
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch {}
         press(e.nativeEvent.timeStamp);
       }}
       onPointerUp={(e) => release(e.nativeEvent.timeStamp)}
