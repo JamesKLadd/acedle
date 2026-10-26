@@ -111,29 +111,35 @@ cookies would give a guest a fresh roll.
 | Daily | Top 100 **rolls** | Current UTC day |
 | Weekly | Top 100 **rolls** (one user can appear up to 7 times) | Mon 00:00 – Sun 23:59 UTC |
 | All-time | Top 100 **accounts** by total points | Forever |
+| Seasons | Top 100 **accounts** by their best finished season (most wins, then fewest losses, then most points) | Forever |
 
-All three also show the viewer's own position, even outside the top 100 (their
+All four also show the viewer's own position, even outside the top 100 (their
 rows follow the top 100 after a gap). Tied scores share a rank (1, 1, 3), and the
 earlier roll (or older account) is listed first. Guests don't appear; a guest
 viewing a board is asked to sign in.
 
-Pages: `/leaderboard` (today), `/leaderboard/weekly`, `/leaderboard/all-time`.
+Pages: `/leaderboard` (today), `/leaderboard/weekly`, `/leaderboard/all-time`,
+`/leaderboard/seasons`.
 The home page also shows "#N of M today" under an account's roll.
 
-Possible later: past days and weeks, all-time "best single roll", and
-per-country boards.
+The daily and weekly boards step back through past days and weeks
+(`?day=` / `?week=`, back to the first day of rolls).
+
+Possible later: all-time "best single roll" and per-country boards.
 
 ### Profile
 
 `/profile` is the viewer's own page (accounts and guests): handle, rolls, total
-points, best roll and all-time rank, with three tabs:
+points, best roll and all-time rank, with four tabs:
 - **History:** every roll, newest first. Each opens its `/rolls/[id]` page with
   the full badge breakdown and the Share button.
 - **Badges:** all 55 badges by category, with times earned and the first day.
   Hidden badges show as "???" until earned.
 - **Player-dex:** players, player-seasons and years collected out of all that
   can be rolled, goals, a grid of the 37 years, and each player with the
-  seasons rolled.
+  seasons rolled. Each player opens their card.
+- **Seasons:** the viewer's season-mode seasons (§5.2), the one in progress
+  first.
 
 **Goals** (`src/lib/profile/goals.ts`) have bronze, silver and gold levels,
 set so that at one roll a day a typical player reaches them in about two
@@ -247,12 +253,24 @@ Top seasons:
 
 After a roll, the player can take the rolled player-season into a tournament (`src/lib/tournament.ts`).
 
-- **Draw:** the player plus 15 player-seasons rolled like the daily roll (any year, any of its top 100), seeded 1–16 by score in a standard draw, so seeds 1 and 2 can only meet in the final.
-- **Odds:** a player scoring `a` beats one scoring `b` with chance `a / (a + b)` (their share of the two scores). Scores span 1k–100M, so ratios, not differences: twice the score is a 67% favourite, ten times is 91%.
-- **The player's matches:** a timing game. A ball sweeps back and forth along a track; tapping (or Space) while it's in the green zone wins the set. Best of 3 sets, the final best of 5. The odds set the zone (7% of the track at 0% odds, 40% at 100%) and the ball's speed (0.45–1.6 s per pass).
+- **Tiers** (`TIERS`) set the draw: the other entrants are random player-seasons from any year whose final rank is in the tier's range (`src/lib/tournament-draw.ts`).
+
+  | Tier | Players | Others ranked | Sets |
+  |---|---|---|---|
+  | 250 | 16 | 20–100 | best of 3 |
+  | 500 | 16 | 1–75 | best of 3 |
+  | 1000 | 16 | 1–50 | best of 3, the final best of 5 |
+  | Grand Slam | 32 | 1–32 | best of 5 |
+
+  Tournaments from before tiers (`tier` null) had 16 players from the top 100, the final best of 5.
+- **Seeding:** everyone is seeded by score in a standard draw, so seeds 1 and 2 can only meet in the final, 1–4 in the semifinals, and so on.
+- **Odds:** scores are compressed before they're compared (`winChance`): each is raised to the power 0.3 (`STRENGTH_POWER`) and a player's chance is their share of the two. Ten times the score is about a 67% favourite, a thousand times 89%. Tournaments started before compressed odds (`COMPRESSED_ODDS_FROM` in `tournament-store.ts`) keep the plain share of the scores (`legacyChance`), so they replay as they were.
+- **The player's matches:** a timing game. A ball sweeps back and forth along a track; stopping it in the green zone wins the set, and the zone's white lines count as in. The odds set the zone (`gameParams`: 2.2% of the track, little more than its two lines, at 0% odds, up to 40% at 100%, growing slowly at first) and the ball's speed (0.38–1.6 s per pass).
+- **Controls** (settings menu, per browser): tap (the ball starts by itself; tap or Space stops it) or hold and release (hold to start the ball, let go to stop it).
+- **Line review:** a stop within a narrow band of a line (`CLOSE_CALL`, 2% of the track, narrower for narrow zones) plays a Hawkeye-style replay showing how far in or out the ball was.
 - **Other matches:** decided by the odds, using a random number drawn from the tournament's seed per match, so the draw always plays out the same. Results of a round show once the player has finished their own match in it.
-- **Daily rolls:** one tournament per roll, saved: the draw, its seed and each set as it's played (a lost set can't be replayed). The result (rounds won, 4 = champion) shows on the roll page, in the share text and in the roll history. It never changes scores or leaderboards. Other people can see a roll's finished draw at `/rolls/[id]/tournament`.
-- **Sandbox:** the same game, with nothing saved (`GET /api/sandbox/tournament?year=&player=` makes the draw).
+- **Daily rolls:** one tournament per roll, at the tier the player picks, saved: the draw, its seed and each set as it's played (a lost set can't be replayed). The result (rounds won; all of them = champion) shows on the roll page, in the share text and in the roll history. It never changes scores or leaderboards. Other people can see a roll's finished draw at `/rolls/[id]/tournament`.
+- **Sandbox:** the same game, with nothing saved (`GET /api/sandbox/tournament?year=&player=&tier=` makes the draw).
 
 ### 5.2 Season mode
 
@@ -380,8 +398,10 @@ Schema: `supabase/migrations/`. Types: `src/lib/supabase/database.types.ts`
 - `user_badges`: a view over `rolls.badges` (times earned, first and last day) for the collection page.
 - `create_profile_and_claim(user, handle, avatar, guest)`: run by the OAuth callback. It creates the profile, and only if that's new does it move the guest's rolls. Service role only.
 - `delete_stale_guests(days = 30)`: deletes anonymous users older than 30 days with no roll in the last 30 days (their rolls go too). A `pg_cron` job runs it nightly at 04:23 UTC.
-- `tournaments(roll_id, entrants jsonb, you, seed, sets boolean[], rounds_won, created_at, finished_at)`: one per roll (§5.1), readable by the roll's owner. `tournament_add_set(roll, expected, won, rounds_won)` appends a set only if the tournament still has `expected` sets and isn't over. Service role only.
-- `roll_leaderboard(from, to)`: rolls between two UTC days (at most a week), so it serves both the daily and the weekly board. `alltime_leaderboard()`: accounts by `total_score`. Both return the top 100 plus the viewer's own rows, with public columns only: handle, avatar, player, score, rank, the board's size, and `is_viewer`.
+- `tournaments(roll_id, tier, entrants jsonb, you, seed, sets boolean[], rounds_won, created_at, finished_at)`: one per roll (§5.1), readable by the roll's owner. `tier` is null for runs from before tiers; only Grand Slams have 32 entrants. `tournament_add_set(roll, expected, won, rounds_won)` appends a set only if the tournament still has `expected` sets and isn't over. Service role only.
+- `seasons(id, roll_id, year, player_id, player_name, setup jsonb, sets boolean[], status, wins, losses, titles, points, calendar_slam, created_at, updated_at, finished_at)`: season mode (§5.2), owned through the card's roll and readable by its owner. `season_start(roll, setup)` starts one unless the owner already has one in progress (locked per owner); `season_add_set(...)` appends a set only if the season still has `expected` sets, and stores the summary the server worked out. Service role only. Playing a season counts as activity for guest cleanup.
+- `photo_submissions(...)` and `admins(user_id)`: community photo suggestions. Signed-in players suggest a Wikimedia Commons file for a player-season (or all of a player's seasons); the server checks the file on Commons, and an admin approves or rejects it at `/admin/photos`. Approved photos take their place on the cards (`src/lib/season-photo.ts`).
+- `roll_leaderboard(from, to)`: rolls between two UTC days (at most a week), so it serves both the daily and the weekly board. `alltime_leaderboard()`: accounts by `total_score`. `season_leaderboard()`: each account's best finished season. All return the top 100 plus the viewer's own rows, with public columns only: handle, avatar, player, score (or record), rank, the board's size, and `is_viewer`.
 
 ---
 
@@ -422,6 +442,12 @@ Schema: `supabase/migrations/`. Types: `src/lib/supabase/database.types.ts`
 - Redesign in the scoreboard theme: reveal reels, rarity tiers, countdown, sound, link previews, phone layouts
 - Total score above the daily roll, with the day's score counted into it after the reveal
 - Tournament mode for daily rolls (saved, fourth migration) and sandbox rolls (§5.1)
+
+**M7 — More to play ✅**
+- Card photos from Wikimedia Commons, illustrated default art, and community photo suggestions with an admin review
+- Tournament tiers (250, 500, 1000, Grand Slam), compressed odds, a harder timing game with lines and the line review, and tap or hold controls
+- Season mode (§5.2): the full calendar against a rival field, the race and the ATP Finals, a seasons leaderboard and profile tab, practice seasons in the sandbox, and storylines
+- Collection goals with bronze, silver and gold medals in the player-dex
 
 ---
 
