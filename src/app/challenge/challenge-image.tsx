@@ -81,7 +81,7 @@ export async function challengeImage(challenge: StoredChallenge | null) {
               {card.name.toUpperCase()}
             </div>
             <div style={{ display: "flex", marginTop: 18, fontSize: 26, color: OG.muted }}>
-              {`Seed ${setup.entrants[setup.you].seed} of ${tier.size} · ${tierFormat(tier).replace(/^\d+ players /, "others ")}`}
+              {`Seed ${setup.entrants[setup.you].seed} of ${tier.size} · ${tierFormat(tier).split(" · ")[1]}`}
             </div>
             <div
               style={{
@@ -96,7 +96,7 @@ export async function challengeImage(challenge: StoredChallenge | null) {
               }}
             >
               <div style={{ display: "flex", fontSize: 24, letterSpacing: 3 }}>SAME CARD, SAME DRAW FOR EVERYONE</div>
-              <div style={{ display: "flex", fontFamily: "Slab", fontSize: 60, color: OG.gold, lineHeight: 1.1 }}>
+              <div style={{ display: "flex", fontFamily: "Slab", fontSize: 50, color: OG.gold, lineHeight: 1.1 }}>
                 HOW FAR CAN YOU GO?
               </div>
             </div>
