@@ -4,6 +4,7 @@ import { ArrowLeft, CalendarRange, Crown, Flame, Play, RotateCcw, Snowflake, Tro
 import { useMemo, useRef, useState, type ReactNode } from "react";
 
 import { abandonSeason, playSeasonSet } from "@/app/seasons/actions";
+import { ShareButton } from "@/components/share-button";
 import { Bracket } from "@/components/tournament/bracket";
 import { TimingGame } from "@/components/tournament/timing-game";
 import { SetDots } from "@/components/tournament/tournament";
@@ -19,6 +20,7 @@ import {
   type Rival,
   type SeasonState,
 } from "@/lib/season/season";
+import { seasonShareText } from "@/lib/season/share";
 import type { StoredSeason } from "@/lib/season/store";
 import { sfx } from "@/lib/sound";
 import { tournamentState } from "@/lib/tournament";
@@ -166,6 +168,7 @@ export function SeasonPlay({
       ) : (
         <Overview
           seasonId={season.id}
+          share={!readOnly && sets.length > 0 ? seasonShareText(state, setup.you) : null}
           state={state}
           status={status}
           playable={playable}
@@ -285,6 +288,7 @@ function SeasonHeader({
 
 function Overview({
   seasonId,
+  share,
   state,
   status,
   playable,
@@ -295,6 +299,8 @@ function Overview({
   error,
 }: {
   seasonId: string;
+  /** The share text, for the season's owner once it's under way. */
+  share: string | null;
   state: SeasonState;
   status: StoredSeason["status"];
   playable: boolean;
@@ -310,6 +316,11 @@ function Overview({
       {error}
       {status === "active" && match && playable && <NextMatch state={state} match={match} sets={null} onPlay={onPlay} />}
       {state.done && <SeasonOver state={state} />}
+      {share && (
+        <div className="-mt-2">
+          <ShareButton text={share} path={`/seasons/${seasonId}`} />
+        </div>
+      )}
 
       <section>
         <SectionTitle className="mb-3">Calendar</SectionTitle>

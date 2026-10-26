@@ -284,6 +284,26 @@ export type Database = {
           is_viewer: boolean;
         }[];
       };
+      season_leaderboard: {
+        Args: Record<string, never>;
+        Returns: {
+          rank: number;
+          entries: number;
+          handle: string;
+          avatar_url: string | null;
+          season_id: string;
+          year: number;
+          player_id: number;
+          player_name: string;
+          country: string | null;
+          wins: number;
+          losses: number;
+          titles: number;
+          points: number;
+          calendar_slam: boolean;
+          is_viewer: boolean;
+        }[];
+      };
       alltime_leaderboard: {
         Args: never;
         Returns: {

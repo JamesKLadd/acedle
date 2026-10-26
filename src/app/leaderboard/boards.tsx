@@ -1,4 +1,4 @@
-import { CircleUser, Dices, LogIn } from "lucide-react";
+import { CalendarRange, CircleUser, Crown, Dices, LogIn } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -12,9 +12,11 @@ import {
   FIRST_DAY,
   getAllTimeBoard,
   getRollBoard,
+  getSeasonBoard,
   splitBoard,
   type AllTimeEntry,
   type RollBoardEntry,
+  type SeasonBoardEntry,
 } from "@/lib/leaderboard";
 import { addDays, utcDay, weekOf } from "@/lib/roll/daily";
 
@@ -37,6 +39,27 @@ const allTimeEntry = (e: AllTimeEntry, i: number): BoardEntry => ({
   avatarUrl: e.avatar_url,
   detail: `${e.roll_count} ${e.roll_count === 1 ? "roll" : "rolls"} · ${fmtScore(e.total_score / e.roll_count)} avg`,
   value: fmtScore(e.total_score),
+  isViewer: e.is_viewer,
+});
+
+const seasonEntry = (e: SeasonBoardEntry, i: number): BoardEntry => ({
+  key: i,
+  rank: e.rank,
+  name: e.handle,
+  avatarUrl: e.avatar_url,
+  detail: (
+    <Link href={`/seasons/${e.season_id}`} className="hover:text-fg hover:underline">
+      {e.country ? `${flag(e.country)} ` : ""}
+      {e.year} {e.player_name} · {e.titles} {e.titles === 1 ? "title" : "titles"} · {fmtScore(e.points)} pts
+      {e.calendar_slam ? " · Calendar Slam" : ""}
+    </Link>
+  ),
+  value: (
+    <span className="inline-flex items-center gap-1">
+      {e.losses === 0 && <Crown className="size-4 text-legendary" aria-label="Perfect season" />}
+      {e.wins}–{e.losses}
+    </span>
+  ),
   isViewer: e.is_viewer,
 });
 
@@ -138,12 +161,53 @@ export async function AllTimeBoard() {
   );
 }
 
+export async function SeasonsBoard() {
+  const viewer = await getViewer();
+  let entries: SeasonBoardEntry[];
+  try {
+    entries = await getSeasonBoard(viewer.supabase);
+  } catch (e) {
+    // The board needs the season_leaderboard migration.
+    console.error(e);
+    return <p className="rounded-lg border-2 border-dashed border-line py-12 text-center text-muted">The seasons board isn&apos;t open yet.</p>;
+  }
+  const { top, below } = splitBoard(entries);
+  return (
+    <>
+      <div className="mb-4 text-center">
+        <p className="font-display text-xl font-bold tracking-wide uppercase">Best seasons</p>
+        <p className="text-xs text-muted">Each player&apos;s best finished season: most wins, then fewest losses, then points</p>
+      </div>
+      <ViewerNote
+        viewer={viewer}
+        mine={entries.find((e) => e.is_viewer)?.rank}
+        entries={entries[0]?.entries}
+        missingIcon={CalendarRange}
+        missingAction={
+          <Link href="/profile/seasons" className={buttonClass({ size: "sm" })}>
+            Your seasons
+          </Link>
+        }
+      >
+        Finish a season to get on the board.
+      </ViewerNote>
+      <Board
+        top={top.map(seasonEntry)}
+        below={below.map((e, i) => ({ ...seasonEntry(e, i), key: `b${i}` }))}
+        empty="No one has finished a season yet."
+      />
+    </>
+  );
+}
+
 /** Where the viewer stands, or how to get on the board. */
 function ViewerNote({
   viewer,
   mine,
   entries,
   best = false,
+  missingIcon = Dices,
+  missingAction,
   children: missing,
 }: {
   viewer: Viewer;
@@ -151,6 +215,9 @@ function ViewerNote({
   entries: number | undefined;
   /** The viewer can have several entries; `mine` is the best one. */
   best?: boolean;
+  /** For an account not on the board: the icon and the way on (rolling, by default). */
+  missingIcon?: typeof Dices;
+  missingAction?: ReactNode;
   children: ReactNode;
 }) {
   let icon = CircleUser;
@@ -163,9 +230,9 @@ function ViewerNote({
       </>
     );
   } else if (viewer.isAccount) {
-    icon = Dices;
+    icon = missingIcon;
     text = missing;
-    action = (
+    action = missingAction ?? (
       <Link href="/" className={buttonClass({ size: "sm" })}>
         Roll now
       </Link>

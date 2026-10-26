@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
     "/photos/**": ["./data/seasons/**", "./data/photos.json"],
     "/admin/**": ["./data/seasons/**", "./data/photos.json"],
     // Season pages show the card's photo; starting a season draws its rivals.
-    "/seasons/**": ["./data/seasons/**", "./data/photos.json"],
+    "/seasons/**": ["./data/seasons/**", "./data/photos.json", "./assets/fonts/*.ttf"],
     // Link preview images (src/lib/og.tsx).
     "/opengraph-image": ["./assets/fonts/*.ttf"],
     "/leaderboard/**": ["./assets/fonts/*.ttf"],

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { CALENDAR, KNOCKOUTS, MAX_POINTS, POINTS } from "./calendar";
 import { courtFactors, FATIGUE_MAX, fatigueAfter, FORM_MAX, matchOdds, NEUTRAL, nextForm } from "./odds";
 import { RIVALS, seasonState, type Rival, type SeasonSetup } from "./season";
+import { seasonShareText } from "./share";
 
 const rival = (i: number, score: number, courts = NEUTRAL): Rival => ({
   playerId: 1000 + i,
@@ -191,5 +192,28 @@ describe("seasonState", () => {
   it("replays a season exactly", () => {
     const sets = [...T(9), false, ...T(20), ...F(7)];
     expect(seasonState(setupFor(9_000, 7), sets)).toEqual(seasonState(setupFor(9_000, 7), sets));
+  });
+});
+
+describe("seasonShareText", () => {
+  it("shares a perfect season", () => {
+    const s = seasonState(setupFor(20_000), [...ALL_KNOCKOUTS, ...T(10)]);
+    expect(seasonShareText(s, { year: 2015, name: "Novak Djokovic" })).toBe(
+      [
+        "Acedle season · 2015 Novak Djokovic",
+        `${"🏆".repeat(13)} 🏆`,
+        "61–0 · 14 titles · 18,500 pts",
+        "👑 Perfect season",
+        "🗓️ Calendar Grand Slam",
+      ].join("\n"),
+    );
+  });
+
+  it("shares a season in progress, events not played yet blank", () => {
+    const s = seasonState(setupFor(500), [...F(3), ...F(2)]);
+    const [title, events, record] = seasonShareText(s, { year: 1998, name: "Magnus Norman" }).split("\n");
+    expect(title).toBe("Acedle season · 1998 Magnus Norman");
+    expect(events).toBe(`🎾🎾${"⬜".repeat(11)} ⬜`);
+    expect(record).toBe("0–2 · 0 titles · 200 pts (in progress)");
   });
 });

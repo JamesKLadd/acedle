@@ -12,7 +12,17 @@ export interface BoardImageRow {
 const MEDAL = ["#f4b81c", "#c7d0dd", "#c98a54"];
 
 /** Link preview for a leaderboard: its title and top three. */
-export async function boardImage({ title, aside, rows }: { title: string; aside: string; rows: BoardImageRow[] }) {
+export async function boardImage({
+  title,
+  aside,
+  rows,
+  empty = "No rolls yet. Be the first.",
+}: {
+  title: string;
+  aside: string;
+  rows: BoardImageRow[];
+  empty?: string;
+}) {
   return new ImageResponse(
     (
       <OgFrame aside={aside.toUpperCase()}>
@@ -21,7 +31,7 @@ export async function boardImage({ title, aside, rows }: { title: string; aside:
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 24 }}>
           {rows.length === 0 ? (
-            <div style={{ display: "flex", fontSize: 40, color: OG.muted }}>No rolls yet. Be the first.</div>
+            <div style={{ display: "flex", fontSize: 40, color: OG.muted }}>{empty}</div>
           ) : (
             rows.slice(0, 3).map((e, i) => (
               <div
