@@ -20,6 +20,7 @@ import {
   type Rival,
   type SeasonState,
 } from "@/lib/season/season";
+import { addPracticeSet, clearPractice } from "@/lib/season/practice";
 import { seasonShareText } from "@/lib/season/share";
 import type { StoredSeason } from "@/lib/season/store";
 import { sfx } from "@/lib/sound";
@@ -53,15 +54,44 @@ interface Decided {
  * player's matches, one set at a time, saved as they go. `readOnly` for
  * anyone but the season's owner, and for seasons that are over.
  */
+type Status = StoredSeason["status"];
+type SeasonLike = Pick<StoredSeason, "id" | "setup" | "sets" | "status">;
+type Saved = { ok: true; sets: boolean[]; status: Status } | { ok: false; error: string };
+
+/** Where a season's sets go: the server for a card's season, the browser for a practice one. */
+function saver(id: string, practice: boolean) {
+  if (practice) {
+    return {
+      saveSet: async (expected: number, won: boolean): Promise<Saved> => {
+        const stored = addPracticeSet(id, expected, won);
+        return stored ? { ok: true, sets: stored.sets, status: stored.status } : { ok: false, error: "This practice season is gone." };
+      },
+      abandon: async (): Promise<Saved> => {
+        clearPractice();
+        return { ok: true, sets: [], status: "abandoned" };
+      },
+    };
+  }
+  const unwrap = (r: Awaited<ReturnType<typeof playSeasonSet>>): Saved =>
+    r.ok ? { ok: true, sets: r.season.sets, status: r.season.status } : r;
+  return {
+    saveSet: (expected: number, won: boolean) => playSeasonSet(id, expected, won).then(unwrap),
+    abandon: () => abandonSeason(id).then(unwrap),
+  };
+}
+
 export function SeasonPlay({
   season,
   card,
   readOnly,
+  practice = false,
 }: {
-  season: StoredSeason;
+  season: SeasonLike;
   /** The card's photo, already rendered. */
   card: ReactNode;
   readOnly: boolean;
+  /** A sandbox season, kept in this browser. */
+  practice?: boolean;
 }) {
   const { setup } = season;
   const [sets, setSets] = useState<boolean[]>(season.sets);
@@ -74,18 +104,18 @@ export function SeasonPlay({
   const state = useMemo(() => seasonState(setup, sets), [setup, sets]);
   const playable = !readOnly && status === "active";
   const top = useRef<HTMLDivElement>(null);
+  const store = useMemo(() => saver(season.id, practice), [season.id, practice]);
 
   function persist(expected: number, won: boolean) {
     setSaving({ expected, won });
     setError(null);
-    playSeasonSet(season.id, expected, won).then(
-      (result) => {
-        if (!result.ok) {
-          setError(result.error);
+    store.saveSet(expected, won).then(
+      (stored) => {
+        if (!stored.ok) {
+          setError(stored.error);
           return;
         }
         setSaving(null);
-        const stored = result.season;
         setStatus(stored.status);
         // Another tab moved on: follow the stored season.
         if (stored.sets.length !== expected + 1 || stored.sets[expected] !== won) {
@@ -152,7 +182,7 @@ export function SeasonPlay({
 
   return (
     <div ref={top} className="flex scroll-mt-20 flex-col gap-6">
-      <SeasonHeader season={season} state={state} status={status} card={card} />
+      <SeasonHeader season={season} state={state} status={status} card={card} practice={practice} />
       {decided ? (
         <MatchOver decided={decided} onNext={play} onOverview={overview} busy={saving !== null} error={errorBanner} />
       ) : view === "match" && playable && state.current ? (
@@ -168,7 +198,8 @@ export function SeasonPlay({
       ) : (
         <Overview
           seasonId={season.id}
-          share={!readOnly && sets.length > 0 ? seasonShareText(state, setup.you) : null}
+          share={!readOnly && !practice && sets.length > 0 ? seasonShareText(state, setup.you) : null}
+          onGiveUp={store.abandon}
           state={state}
           status={status}
           playable={playable}
@@ -215,11 +246,13 @@ function SeasonHeader({
   state,
   status,
   card,
+  practice,
 }: {
-  season: StoredSeason;
+  season: SeasonLike;
   state: SeasonState;
-  status: StoredSeason["status"];
+  status: Status;
   card: ReactNode;
+  practice: boolean;
 }) {
   const { you } = season.setup;
   const place = state.race.findIndex((r) => r.you) + 1;
@@ -242,6 +275,11 @@ function SeasonHeader({
           >
             {STATUS_LABEL[status]}
           </span>
+          {practice && (
+            <span className="rounded-[4px] bg-amber-400 px-1.5 text-[10px] font-bold tracking-wider text-zinc-950 uppercase">
+              Practice · not saved
+            </span>
+          )}
           {state.perfect && state.record.wins > 0 && (
             <span className="flex items-center gap-1 rounded-[4px] border-2 border-legendary px-1.5 text-[10px] font-bold tracking-wider text-legendary uppercase">
               <Crown className="size-3" aria-hidden /> {state.done ? "Perfect season" : "Unbeaten"}
@@ -289,6 +327,7 @@ function SeasonHeader({
 function Overview({
   seasonId,
   share,
+  onGiveUp,
   state,
   status,
   playable,
@@ -301,6 +340,7 @@ function Overview({
   seasonId: string;
   /** The share text, for the season's owner once it's under way. */
   share: string | null;
+  onGiveUp: () => Promise<Saved>;
   state: SeasonState;
   status: StoredSeason["status"];
   playable: boolean;
@@ -339,7 +379,7 @@ function Overview({
         <RaceTable race={state.race} />
       </section>
 
-      {playable && <GiveUp seasonId={seasonId} onAbandoned={onAbandoned} />}
+      {playable && <GiveUp onGiveUp={onGiveUp} onAbandoned={onAbandoned} />}
     </>
   );
 }
@@ -411,13 +451,13 @@ function SeasonOver({ state }: { state: SeasonState }) {
   );
 }
 
-function GiveUp({ seasonId, onAbandoned }: { seasonId: string; onAbandoned: () => void }) {
+function GiveUp({ onGiveUp, onAbandoned }: { onGiveUp: () => Promise<Saved>; onAbandoned: () => void }) {
   const [confirming, setConfirming] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   async function giveUp() {
     setPending(true);
-    const result = await abandonSeason(seasonId);
+    const result = await onGiveUp();
     setPending(false);
     if (result.ok) onAbandoned();
     else setError(result.error);

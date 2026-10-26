@@ -1,6 +1,7 @@
 "use client";
 
-import { Dices, Trophy } from "lucide-react";
+import { CalendarRange, Dices, Trophy } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import type { SandboxRollResponse } from "@/app/api/sandbox/roll/route";
@@ -9,6 +10,8 @@ import { TierPicker } from "@/components/tournament/tier-picker";
 import { Tournament } from "@/components/tournament/tournament";
 import { buttonClass } from "@/components/ui";
 import { MAX_LUCK, MIN_LUCK } from "@/lib/roll";
+import { startPractice, usePracticeRaw } from "@/lib/season/practice";
+import type { SeasonSetup } from "@/lib/season/season";
 import type { TierId, TournamentSetup } from "@/lib/tournament";
 
 const isFreeKey = (e: KeyboardEvent) =>
@@ -25,6 +28,25 @@ export function SandboxClient() {
   const [draw, setDraw] = useState<TournamentSetup | null>(null);
   const [picking, setPicking] = useState(false);
   const [drawing, setDrawing] = useState<TierId | null>(null);
+  const [practicing, setPracticing] = useState(false);
+  const hasPractice = usePracticeRaw() !== null;
+  const router = useRouter();
+
+  async function practiceSeason() {
+    if (!result) return;
+    setPracticing(true);
+    setError(null);
+    try {
+      const { year, playerId, name, hand, country } = result.season;
+      const res = await fetch(`/api/sandbox/season?year=${year}&player=${playerId}`, { cache: "no-store" });
+      if (!res.ok) throw new Error(`Couldn't make the season (${res.status})`);
+      startPractice((await res.json()) as SeasonSetup, { playerId, name, year, hand, country }, result.photo);
+      router.push("/sandbox/season");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setPracticing(false);
+    }
+  }
   const drawRef = useRef<HTMLDivElement>(null);
 
   async function enterTournament(tier: TierId) {
@@ -128,6 +150,23 @@ export function SandboxClient() {
             <span className="block text-sm text-muted">
               Take {result.season.year} {result.season.name} into a 250, 500, 1000 or Grand Slam. Practice only:
               nothing is saved.
+            </span>
+          </span>
+        </button>
+      )}
+
+      {result && !revealing && !draw && !picking && (
+        <button
+          onClick={practiceSeason}
+          disabled={practicing}
+          className="group flex items-center gap-4 rounded-lg border-2 border-line bg-surface shadow-[4px_4px_0_0_var(--line)] px-5 py-4 text-left transition hover:border-accent/60 disabled:opacity-60"
+        >
+          <CalendarRange className="size-7 shrink-0 text-accent-text" aria-hidden />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">{practicing ? "Making the draws…" : "Practice a season"}</span>
+            <span className="block text-sm text-muted">
+              Take {result.season.year} {result.season.name} through 4 Slams, 9 Masters and the ATP Finals. Kept in this
+              browser only{hasPractice ? ", replacing your other practice season" : ""}.
             </span>
           </span>
         </button>

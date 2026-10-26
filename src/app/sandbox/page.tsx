@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { PageTitle } from "@/components/ui";
 
 import { SandboxClient } from "./sandbox-client";
+import { PracticeLink } from "./season/practice-view";
 
 export const metadata: Metadata = { title: "Sandbox · Acedle" };
 
@@ -17,6 +18,7 @@ export default function SandboxPage() {
           </span>
         </PageTitle>
       </div>
+      <PracticeLink />
       <SandboxClient />
     </main>
   );

@@ -64,6 +64,20 @@ export default function AboutPage() {
           by a line go to a line review), and the rest are decided by the odds. One tournament per daily roll, just
           for bragging rights: it doesn&apos;t change your score.
         </p>
+        <p>
+          Season mode takes any card you&apos;ve rolled through a whole season: the Australian Open, Indian Wells,
+          Miami, Monte Carlo, Madrid, Rome, Roland Garros, Wimbledon, Canada, Cincinnati, the US Open, Shanghai and
+          Paris, then the ATP Finals for the top 8 of the points race. You face 40 rivals from any year ranked 1–50.
+          Slams are 32 players, best of 5; Masters 16 players, best of 3. Odds come from the two scores (compressed,
+          so great cards are favourites, not certainties), adjusted by each player&apos;s real record on that surface
+          that year, your form (wins build it, losses knock it back) and fatigue (sets already played at the event).
+          Points follow today&apos;s ATP values, so a perfect season is worth 18,500. The goal: go unbeaten. One
+          season in progress at a time; the best finished season of each account makes the{" "}
+          <Link href="/leaderboard/seasons" className={linkClass}>
+            seasons leaderboard
+          </Link>
+          . The sandbox has practice seasons, kept in your browser.
+        </p>
       </Section>
 
       <Section title="Data">
@@ -135,6 +149,10 @@ export default function AboutPage() {
           <li>
             If you suggest a photo, it&apos;s stored with your account and your note until it&apos;s reviewed; only
             the reviewer sees who suggested it. Approved photos stay on the cards.
+          </li>
+          <li>
+            A season keeps its rival field and your set results with the card it&apos;s played with, and anyone with
+            the season&apos;s link can follow it. Practice seasons from the sandbox stay in your browser.
           </li>
           <li>
             If you take a daily roll into a tournament, its draw and your set results are stored with the roll, and
