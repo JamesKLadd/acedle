@@ -1,5 +1,5 @@
-// Season mode's odds. Scores span five orders of magnitude, so a season
-// compresses them first (to the power STRENGTH_POWER): against a field of the
+// Season mode's odds. Scores span five orders of magnitude, so they're
+// compressed first (to the power STRENGTH_POWER, as in tournaments): against a field of the
 // best player-seasons, a great card should be a favourite and an ordinary
 // one a real underdog, not certain wins and certain losses. Strength is then
 // scaled by how well the player-season did on the event's surface that
@@ -7,6 +7,7 @@
 // fatigue (sets already played at the event).
 
 import type { PlayerSeason, Surface, SurfaceRecord } from "../data/types";
+import { STRENGTH_POWER } from "../tournament";
 import type { Court } from "./calendar";
 
 export type CourtFactors = Record<Court, number>;
@@ -50,9 +51,6 @@ export interface Contender {
   score: number;
   courts: CourtFactors;
 }
-
-/** Scores are taken to this power: ten times the score is about twice the strength. */
-export const STRENGTH_POWER = 0.3;
 
 const strength = (c: Contender) => Math.max(1, c.score) ** STRENGTH_POWER;
 

@@ -10,6 +10,8 @@ import {
   tierOf,
   TIERS,
   tournamentState,
+  legacyChance,
+  oddsFor,
   winChance,
   type Entrant,
 } from "./tournament";
@@ -30,11 +32,38 @@ const pool = poolOf(16);
 const setup = seedDraw(pool, 7, 12345, null);
 
 describe("winChance", () => {
-  it("is the share of the two scores", () => {
+  it("shares the compressed scores: ten times the score is about a 2-to-1 favourite", () => {
     expect(winChance(1, 1)).toBe(0.5);
-    expect(winChance(2000, 1000)).toBeCloseTo(2 / 3);
-    expect(winChance(1000, 10_000)).toBeCloseTo(1 / 11);
     expect(winChance(0, 0)).toBe(0.5);
+    expect(winChance(1_000_000, 100_000)).toBeCloseTo(0.666, 2);
+    expect(winChance(100_000_000, 100_000)).toBeCloseTo(0.888, 2);
+    expect(winChance(1000, 10_000) + winChance(10_000, 1000)).toBeCloseTo(1);
+  });
+
+  it("keeps the plain share for tournaments started before", () => {
+    expect(legacyChance(2000, 1000)).toBeCloseTo(2 / 3);
+    expect(legacyChance(1000, 10_000)).toBeCloseTo(1 / 11);
+    expect(oddsFor({ legacyOdds: true })).toBe(legacyChance);
+    expect(oddsFor({})).toBe(winChance);
+  });
+
+  it("replays an old tournament on the old odds", () => {
+    const old = { ...setup, legacyOdds: true };
+    const a = tournamentState(old, [false, false]).rounds;
+    expect(tournamentState(old, [false, false]).rounds).toEqual(a);
+    // Same seed, compressed odds: the long shots win more of the computed matches.
+    const upsets = (s: typeof setup) =>
+      tournamentState(s, [false, false])
+        .rounds.flat()
+        .filter((m) => m.winner !== null && m.sets === null)
+        .filter((m) => setup.entrants[m.winner!].score < setup.entrants[m.winner === m.a ? m.b! : m.a!].score).length;
+    let legacy = 0;
+    let compressed = 0;
+    for (let seed = 0; seed < 300; seed++) {
+      legacy += upsets({ ...old, seed });
+      compressed += upsets({ ...setup, seed });
+    }
+    expect(compressed).toBeGreaterThan(legacy);
   });
 });
 

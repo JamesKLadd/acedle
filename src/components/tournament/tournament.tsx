@@ -12,8 +12,8 @@ import {
   roundName,
   tierFormat,
   tierOf,
+  oddsFor,
   tournamentState,
-  winChance,
   type Entrant,
   type TournamentSetup,
   type TournamentState,
@@ -225,7 +225,7 @@ export function Tournament({
     const m = state.current;
     if (!m) return null;
     const opp = setup.entrants[m.opponent];
-    const odds = winChance(you.score, opp.score);
+    const odds = oddsFor(setup)(you.score, opp.score);
     const mySets = state.rounds[m.round][m.index].sets ?? [];
     return (
       <div className="flex flex-col gap-4">
@@ -251,8 +251,7 @@ export function Tournament({
         {errorBanner}
         {busy && error ? null : <TimingGame key={sets.length} chance={odds} onResult={onSet} />}
         <p className="text-center text-xs text-subtle">
-          Your odds are your share of the two scores ({pct(odds)}): better odds mean a wider green zone and a slower
-          ball.
+          Your odds come from the two scores ({pct(odds)}): better odds mean a wider green zone and a slower ball.
         </p>
       </div>
     );

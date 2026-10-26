@@ -46,7 +46,10 @@ export async function startTournament(rollId: string, tier: TierId): Promise<Tou
     // A second tab may get there first; then keep its draw.
     const { error } = await createAdminClient()
       .from("tournaments")
-      .upsert({ roll_id: rollId, ...setup }, { onConflict: "roll_id", ignoreDuplicates: true });
+      .upsert(
+        { roll_id: rollId, tier: setup.tier, entrants: setup.entrants, you: setup.you, seed: setup.seed },
+        { onConflict: "roll_id", ignoreDuplicates: true },
+      );
     if (error) throw new Error(error.message);
     return { ok: true, tournament: (await load(rollId))! };
   } catch (e) {

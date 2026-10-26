@@ -55,6 +55,11 @@ export interface TournamentSetup {
   you: number;
   /** Unsigned 32-bit seed for the matches the player doesn't play. */
   seed: number;
+  /**
+   * Started before odds were compressed (oddsFor): it keeps playing on the
+   * plain share of the scores, so its draw replays as it was.
+   */
+  legacyOdds?: boolean;
 }
 
 /** Rounds in a draw of `size`: 4 for 16 players, 5 for 32. */
@@ -85,16 +90,31 @@ const SEED_ORDER: Record<16 | 32, number[]> = {
   ],
 };
 
+/** Scores are taken to this power before they're compared: ten times the score is about twice the strength. */
+export const STRENGTH_POWER = 0.3;
+
 /**
  * Chance that a player scoring `a` beats one scoring `b`: their share of the
- * two scores. Scores span 1,000 to 100 million, so ratios (not differences)
- * keep it meaningful: twice the score is a 67% favourite, ten times is 91%.
+ * two strengths, each the score to the power STRENGTH_POWER. Scores span
+ * 1,000 to 100 million, so comparing them straight made great seasons
+ * near-certain winners and ordinary ones hopeless; compressed, ten times the
+ * score is a 67% favourite and a thousand times 89%.
  */
 export function winChance(a: number, b: number): number {
+  const x = Math.max(1, a) ** STRENGTH_POWER;
+  const y = Math.max(1, b) ** STRENGTH_POWER;
+  return x / (x + y);
+}
+
+/** The plain share of the two scores: tournaments started before compressed odds. */
+export function legacyChance(a: number, b: number): number {
   const x = Math.max(1, a);
   const y = Math.max(1, b);
   return x / (x + y);
 }
+
+/** The odds a tournament plays on. */
+export const oddsFor = (setup: Pick<TournamentSetup, "legacyOdds">) => (setup.legacyOdds ? legacyChance : winChance);
 
 /**
  * The timing game for a set at `chance` (the player's odds): the green zone's
@@ -219,7 +239,7 @@ export interface TournamentState {
 export interface DrawRules {
   /** Best of how many sets round `r` is (default: the tier's). */
   bestOf?: (r: number) => number;
-  /** Chance that entrant `a` beats `b` in a match the player isn't in (default: winChance of the scores). */
+  /** Chance that entrant `a` beats `b` in a match the player isn't in (default: the tournament's odds on the scores). */
   chance?: (a: Entrant, b: Entrant) => number;
 }
 
@@ -232,7 +252,8 @@ export function tournamentState(
   const { you, seed } = setup;
   const tier = tierOf(setup.tier);
   const setsOf = rules.bestOf ?? ((r: number) => bestOf(tier, r));
-  const chance = rules.chance ?? ((a: Entrant, b: Entrant) => winChance(a.score, b.score));
+  const odds = oddsFor(setup);
+  const chance = rules.chance ?? ((a: Entrant, b: Entrant) => odds(a.score, b.score));
   const size = setup.entrants.length;
   const count = roundCount(size);
   const rounds: Match[][] = [];

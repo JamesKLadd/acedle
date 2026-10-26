@@ -15,9 +15,18 @@ export interface StoredTournament {
   roundsWon: number | null;
 }
 
+/** Tournaments started before this play on the old, uncompressed odds (tournament.ts, legacyChance). */
+const COMPRESSED_ODDS_FROM = "2026-10-26T03:40:00Z";
+
 export const toStoredTournament = (row: Tables<"tournaments">): StoredTournament => ({
   // Rows from before the tiers migration have no tier column at all.
-  setup: { tier: row.tier ?? null, entrants: row.entrants, you: row.you, seed: Number(row.seed) },
+  setup: {
+    tier: row.tier ?? null,
+    entrants: row.entrants,
+    you: row.you,
+    seed: Number(row.seed),
+    legacyOdds: Date.parse(row.created_at) < Date.parse(COMPRESSED_ODDS_FROM),
+  },
   sets: row.sets,
   roundsWon: row.rounds_won,
 });
