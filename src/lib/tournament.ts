@@ -148,13 +148,36 @@ export function seedDraw(
   seed: number,
   tier: TierId | null,
 ): TournamentSetup {
-  const { size } = tierOf(tier);
+  const placed = placeDraw(pool, you, tierOf(tier).size);
+  return { tier, ...placed, seed: seed >>> 0 };
+}
+
+/**
+ * Places `pool` into a draw of `size`, numbered by score. The best `seeded`
+ * take their seeded places; the rest fill the other places in an order
+ * shuffled by `random` (all seeded by default). `you` is an index in `pool`,
+ * returned as one in the draw.
+ */
+export function placeDraw(
+  pool: readonly Omit<Entrant, "seed">[],
+  you: number,
+  size: 16 | 32,
+  seeded: number = size,
+  random: () => number = Math.random,
+): { entrants: Entrant[]; you: number } {
   if (pool.length !== size) throw new Error(`A draw needs ${size} entrants`);
-  const order = SEED_ORDER[size];
   const bySeed = pool.map((e, i) => ({ e, i })).sort((a, b) => b.e.score - a.e.score);
+  const order = [...SEED_ORDER[size]];
+  // The unseeded, shuffled into the unseeded places.
+  const open = order.flatMap((s, place) => (s > seeded ? [place] : []));
+  const unseeded = open.map((place) => order[place]);
+  for (let i = unseeded.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [unseeded[i], unseeded[j]] = [unseeded[j], unseeded[i]];
+  }
+  open.forEach((place, k) => (order[place] = unseeded[k]));
   const entrants = order.map((s) => ({ ...bySeed[s - 1].e, seed: s }));
-  const drawYou = order.indexOf(bySeed.findIndex((x) => x.i === you) + 1);
-  return { tier, entrants, you: drawYou, seed: seed >>> 0 };
+  return { entrants, you: order.indexOf(bySeed.findIndex((x) => x.i === you) + 1) };
 }
 
 /** Deterministic [0, 1) for one match of a draw of `size`, from the tournament's seed. */
@@ -188,12 +211,28 @@ export interface TournamentState {
   /** The round the player is in (or went out in). */
   round: number;
   champion: number | null;
+  /** How many of the given sets the player's matches used (the rest belong after the run). */
+  setsUsed: number;
+}
+
+/** Overrides for a draw played outside tournament mode (season mode's events). */
+export interface DrawRules {
+  /** Best of how many sets round `r` is (default: the tier's). */
+  bestOf?: (r: number) => number;
+  /** Chance that entrant `a` beats `b` in a match the player isn't in (default: winChance of the scores). */
+  chance?: (a: Entrant, b: Entrant) => number;
 }
 
 /** The whole draw after the player's `sets` (true = set won), in order. */
-export function tournamentState(setup: TournamentSetup, sets: readonly boolean[]): TournamentState {
+export function tournamentState(
+  setup: TournamentSetup,
+  sets: readonly boolean[],
+  rules: DrawRules = {},
+): TournamentState {
   const { you, seed } = setup;
   const tier = tierOf(setup.tier);
+  const setsOf = rules.bestOf ?? ((r: number) => bestOf(tier, r));
+  const chance = rules.chance ?? ((a: Entrant, b: Entrant) => winChance(a.score, b.score));
   const size = setup.entrants.length;
   const count = roundCount(size);
   const rounds: Match[][] = [];
@@ -211,7 +250,7 @@ export function tournamentState(setup: TournamentSetup, sets: readonly boolean[]
       const match: Match = { round: r, index: m, a, b, winner: null, sets: null };
       if (a === you || b === you) {
         const opponent = (a === you ? b : a)!;
-        const need = Math.ceil(bestOf(tier, r) / 2);
+        const need = Math.ceil(setsOf(r) / 2);
         const played: boolean[] = [];
         let won = 0;
         let lost = 0;
@@ -230,11 +269,11 @@ export function tournamentState(setup: TournamentSetup, sets: readonly boolean[]
           match.winner = opponent;
           roundsWon = r;
         } else {
-          current = { round: r, index: m, opponent, bestOf: bestOf(tier, r), won, lost };
+          current = { round: r, index: m, opponent, bestOf: setsOf(r), won, lost };
         }
       } else if (a !== null && b !== null) {
         const e = setup.entrants;
-        match.winner = matchRandom(seed, r, m, size) < winChance(e[a].score, e[b].score) ? a : b;
+        match.winner = matchRandom(seed, r, m, size) < chance(e[a], e[b]) ? a : b;
       }
       matches.push(match);
     }
@@ -243,7 +282,7 @@ export function tournamentState(setup: TournamentSetup, sets: readonly boolean[]
   }
 
   const champion = rounds[count - 1][0].winner;
-  return { rounds, current, roundsWon, round, champion };
+  return { rounds, current, roundsWon, round, champion, setsUsed: next };
 }
 
 /** How far a finished run in a draw of `size` went, e.g. "Champion", "Semifinals". */
