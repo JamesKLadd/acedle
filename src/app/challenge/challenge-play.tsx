@@ -143,7 +143,7 @@ export function ChallengePlay({
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <ShareButton text={challengeShareText(day, setup, sets, card)} path={`/challenge/${day}`} />
+            <ShareButton text={challengeShareText(day, setup, sets, card)} path={`/challenge/${day}`} title="Share your run" />
             {isAccount ? (
               <Link href={`/leaderboard/challenge?day=${day}`} className={buttonClass({ variant: "secondary" })}>
                 <Trophy className="size-4" aria-hidden />

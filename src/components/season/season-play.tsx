@@ -368,7 +368,7 @@ function Overview({
       {state.done && <SeasonOver state={state} stories={stories} />}
       {share && (
         <div className="-mt-2">
-          <ShareButton text={share} path={`/seasons/${seasonId}`} />
+          <ShareButton text={share} path={`/seasons/${seasonId}`} title="Share your season" />
         </div>
       )}
 

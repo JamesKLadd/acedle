@@ -12,7 +12,7 @@ const noSubscribe = () => () => {};
  * where there is one). `path` is appended to this site's origin as the last
  * line, so links point wherever the app is deployed.
  */
-export function ShareButton({ text, path }: { text: string; path: string }) {
+export function ShareButton({ text, path, title = "Share your roll" }: { text: string; path: string; title?: string }) {
   const id = useId();
   const origin = useSyncExternalStore(noSubscribe, () => window.location.origin, () => "");
   const canShare = useSyncExternalStore(noSubscribe, () => typeof navigator.share === "function", () => false);
@@ -52,7 +52,7 @@ export function ShareButton({ text, path }: { text: string; path: string }) {
       >
         <div className="flex items-center justify-between gap-3">
           <h2 id={`${id}-title`} className="font-display text-xl font-bold tracking-wide uppercase">
-            Share your roll
+            {title}
           </h2>
           <button
             popoverTarget={id}
