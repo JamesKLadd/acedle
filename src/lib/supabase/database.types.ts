@@ -226,6 +226,57 @@ export type Database = {
         };
         Relationships: [];
       };
+      challenges: {
+        Row: {
+          /** UTC day, YYYY-MM-DD. */
+          day: string;
+          tier: TierId;
+          /** The card's player-season as it was that day. */
+          card: PlayerSeason;
+          score: number;
+          /** 16 or 32 entrants in draw order (src/lib/tournament.ts). */
+          entrants: Entrant[];
+          you: number;
+          seed: number;
+          created_at: string;
+        };
+        Insert: {
+          day: string;
+          tier: TierId;
+          card: PlayerSeason;
+          score: number;
+          entrants: Entrant[];
+          you: number;
+          seed: number;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["challenges"]["Insert"]>;
+        Relationships: [];
+      };
+      challenge_runs: {
+        Row: {
+          day: string;
+          user_id: string;
+          sets: boolean[];
+          sets_lost: number;
+          /** Set once the run is over: rounds won (all of them = champion). */
+          rounds_won: number | null;
+          created_at: string;
+          updated_at: string;
+          finished_at: string | null;
+        };
+        Insert: { day: string; user_id: string };
+        Update: never;
+        Relationships: [
+          {
+            foreignKeyName: "challenge_runs_day_fkey";
+            columns: ["day"];
+            isOneToOne: false;
+            referencedRelation: "challenges";
+            referencedColumns: ["day"];
+          },
+        ];
+      };
     };
     Views: {
       user_badges: {
@@ -262,6 +313,24 @@ export type Database = {
           p_finished: boolean;
         };
         Returns: boolean;
+      };
+      challenge_add_set: {
+        Args: { p_day: string; p_user_id: string; p_expected: number; p_won: boolean; p_rounds_won?: number | null };
+        Returns: "added" | "stale" | "too-fast";
+      };
+      challenge_leaderboard: {
+        Args: { p_day: string };
+        Returns: {
+          rank: number;
+          entries: number;
+          handle: string;
+          avatar_url: string | null;
+          rounds_won: number;
+          sets_won: number;
+          sets_lost: number;
+          finished_at: string;
+          is_viewer: boolean;
+        }[];
       };
       tournament_add_set: {
         Args: { p_roll_id: string; p_expected: number; p_won: boolean; p_rounds_won?: number | null };

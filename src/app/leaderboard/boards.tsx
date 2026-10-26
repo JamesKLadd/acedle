@@ -1,4 +1,4 @@
-import { CalendarRange, CircleUser, Crown, Dices, LogIn } from "lucide-react";
+import { CalendarRange, CircleUser, Crown, Dices, LogIn, Swords } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -7,18 +7,23 @@ import { buttonClass } from "@/components/ui";
 import { getViewer, type Viewer } from "@/lib/auth/viewer";
 import { flag } from "@/lib/flags";
 import { fmtDate, fmtDay, fmtScore, fmtShortDay } from "@/lib/format";
+import { challengeDay, FIRST_CHALLENGE } from "@/lib/challenge";
+import { getChallenge } from "@/lib/challenge-store";
 import {
   boardDay,
   FIRST_DAY,
   getAllTimeBoard,
+  getChallengeBoard,
   getRollBoard,
   getSeasonBoard,
   splitBoard,
   type AllTimeEntry,
+  type ChallengeBoardEntry,
   type RollBoardEntry,
   type SeasonBoardEntry,
 } from "@/lib/leaderboard";
 import { addDays, utcDay, weekOf } from "@/lib/roll/daily";
+import { roundCount, roundShort, runLabel, tierOf } from "@/lib/tournament";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -196,6 +201,89 @@ export async function SeasonsBoard() {
         below={below.map((e, i) => ({ ...seasonEntry(e, i), key: `b${i}` }))}
         empty="No one has finished a season yet."
       />
+    </>
+  );
+}
+
+const challengeEntry =
+  (size: number) =>
+  (e: ChallengeBoardEntry, i: number): BoardEntry => ({
+    key: i,
+    rank: e.rank,
+    name: e.handle,
+    avatarUrl: e.avatar_url,
+    detail: `${runLabel(e.rounds_won, size)} · ${e.sets_won}–${e.sets_lost} in sets`,
+    // The round reached: the title, or the round they went out in.
+    value:
+      e.rounds_won >= roundCount(size) ? (
+        <span className="inline-flex items-center gap-1 text-legendary">
+          <Crown className="size-4" aria-hidden /> Title
+        </span>
+      ) : (
+        roundShort(size, e.rounds_won)
+      ),
+    isViewer: e.is_viewer,
+  });
+
+export async function ChallengeBoard({ searchParams }: { searchParams: SearchParams }) {
+  const [viewer, params] = await Promise.all([getViewer(), searchParams]);
+  const today = utcDay();
+  const day = challengeDay(params.day, today) ?? today;
+  const isToday = day === today;
+  let entries: ChallengeBoardEntry[];
+  let challenge: Awaited<ReturnType<typeof getChallenge>>;
+  try {
+    [entries, challenge] = await Promise.all([getChallengeBoard(viewer.supabase, day), getChallenge(day)]);
+  } catch (e) {
+    // The board needs the daily challenge migration.
+    console.error(e);
+    return (
+      <p className="rounded-lg border-2 border-dashed border-line py-12 text-center text-muted">
+        The daily challenge isn&apos;t open yet.
+      </p>
+    );
+  }
+  const size = challenge?.setup.entrants.length ?? 16;
+  const { top, below } = splitBoard(entries);
+  return (
+    <>
+      <PeriodNav
+        label={isToday ? `Today · ${fmtShortDay(day)}` : fmtDay(day)}
+        prevHref={day > FIRST_CHALLENGE ? `/leaderboard/challenge?day=${addDays(day, -1)}` : null}
+        nextHref={isToday ? null : `/leaderboard/challenge?day=${addDays(day, 1)}`}
+        currentHref="/leaderboard/challenge"
+        isCurrent={isToday}
+      />
+      {challenge && (
+        <p className="-mt-2 mb-4 text-center text-sm text-muted">
+          <Link href={`/challenge/${day}`} className="hover:text-fg hover:underline">
+            Challenge #{challenge.number}: {challenge.card.year} {challenge.card.name} in a {tierOf(challenge.tier).name}
+          </Link>
+        </p>
+      )}
+      <ViewerNote
+        viewer={viewer}
+        mine={entries.find((e) => e.is_viewer)?.rank}
+        entries={entries[0]?.entries}
+        missingIcon={Swords}
+        missingAction={
+          isToday ? (
+            <Link href="/challenge" className={buttonClass({ size: "sm" })}>
+              Play
+            </Link>
+          ) : undefined
+        }
+      >
+        {isToday ? "Finish today's challenge to get on the board." : "You didn't finish that challenge."}
+      </ViewerNote>
+      <Board
+        top={top.map(challengeEntry(size))}
+        below={below.map((e, i) => ({ ...challengeEntry(size)(e, i), key: `b${i}` }))}
+        empty={isToday ? "No one has finished today's challenge yet. Be the first!" : "No one finished that challenge."}
+      />
+      <p className="mt-4 text-center text-xs text-subtle">
+        Ranked by rounds won, then fewest sets lost; ties share a rank, the first to finish listed first.
+      </p>
     </>
   );
 }

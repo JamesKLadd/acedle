@@ -8,6 +8,7 @@ import type { Database, FunctionReturns } from "./supabase/database.types";
 export type RollBoardEntry = FunctionReturns<"roll_leaderboard">[number];
 export type AllTimeEntry = FunctionReturns<"alltime_leaderboard">[number];
 export type SeasonBoardEntry = FunctionReturns<"season_leaderboard">[number];
+export type ChallengeBoardEntry = FunctionReturns<"challenge_leaderboard">[number];
 
 /** How many entries a board lists before only the viewer's own rows follow. */
 export const BOARD_SIZE = 100;
@@ -28,6 +29,13 @@ export async function getAllTimeBoard(db: SupabaseClient<Database>): Promise<All
 /** Each account's best finished season. */
 export async function getSeasonBoard(db: SupabaseClient<Database>): Promise<SeasonBoardEntry[]> {
   const { data, error } = await db.rpc("season_leaderboard");
+  if (error) throw new Error(`Couldn't load the leaderboard: ${error.message}`);
+  return data;
+}
+
+/** A day's challenge: finished runs, most rounds won, then fewest sets lost. */
+export async function getChallengeBoard(db: SupabaseClient<Database>, day: string): Promise<ChallengeBoardEntry[]> {
+  const { data, error } = await db.rpc("challenge_leaderboard", { p_day: day });
   if (error) throw new Error(`Couldn't load the leaderboard: ${error.message}`);
   return data;
 }

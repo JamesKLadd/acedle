@@ -28,6 +28,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { getTournament, runResult } from "@/lib/tournament-store";
 
 import { signOut } from "./actions";
+import { ChallengeLink } from "./challenge/challenge-view";
 import { RollButton } from "./roll-button";
 import { SignInButtons } from "./sign-in-buttons";
 
@@ -157,6 +158,8 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
           Daily rolls aren&apos;t open yet: turn on anonymous sign-ins or an OAuth provider in Supabase.
         </p>
       )}
+
+      <ChallengeLink />
 
       {isAccount ? (
         <div className="flex items-center gap-3 text-sm text-muted">

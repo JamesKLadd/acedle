@@ -112,25 +112,27 @@ cookies would give a guest a fresh roll.
 | Weekly | Top 100 **rolls** (one user can appear up to 7 times) | Mon 00:00 – Sun 23:59 UTC |
 | All-time | Top 100 **accounts** by total points | Forever |
 | Seasons | Top 100 **accounts** by their best finished season (most wins, then fewest losses, then most points) | Forever |
+| Challenge | Top 100 **accounts** at a day's challenge (§5.3): most rounds won, then fewest sets lost | One UTC day |
 
-All four also show the viewer's own position, even outside the top 100 (their
+All five also show the viewer's own position, even outside the top 100 (their
 rows follow the top 100 after a gap). Tied scores share a rank (1, 1, 3), and the
 earlier roll (or older account) is listed first. Guests don't appear; a guest
 viewing a board is asked to sign in.
 
 Pages: `/leaderboard` (today), `/leaderboard/weekly`, `/leaderboard/all-time`,
-`/leaderboard/seasons`.
+`/leaderboard/seasons`, `/leaderboard/challenge`.
 The home page also shows "#N of M today" under an account's roll.
 
-The daily and weekly boards step back through past days and weeks
-(`?day=` / `?week=`, back to the first day of rolls).
+The daily, weekly and challenge boards step back through past days and weeks
+(`?day=` / `?week=`, back to the first day of rolls or challenges).
 
 Possible later: all-time "best single roll" and per-country boards.
 
 ### Profile
 
 `/profile` is the viewer's own page (accounts and guests): handle, rolls, total
-points, best roll and all-time rank, with four tabs:
+points, best roll and all-time rank, with five tabs (they scroll sideways on
+phones):
 - **History:** every roll, newest first. Each opens its `/rolls/[id]` page with
   the full badge breakdown and the Share button.
 - **Badges:** all 55 badges by category, with times earned and the first day.
@@ -140,6 +142,8 @@ points, best roll and all-time rank, with four tabs:
   seasons rolled. Each player opens their card.
 - **Seasons:** the viewer's season-mode seasons (§5.2), the one in progress
   first.
+- **Challenges:** the viewer's daily challenges (§5.3), newest first, with
+  their challenge streak.
 
 **Goals** (`src/lib/profile/goals.ts`) have bronze, silver and gold levels,
 set so that at one roll a day a typical player reaches them in about two
@@ -299,6 +303,19 @@ ones a match just added, the rivalries and the recap. A finished season's
 share text adds its upset (35% or less) and nemesis, and the link preview
 shows one storyline.
 
+### 5.3 Daily challenge
+
+Each UTC day everyone takes the same card into the same tournament draw
+(`src/lib/challenge.ts`, `challenge-store.ts`), at `/challenge`.
+
+- **Schedule:** the tier builds through the week: a 250 Monday to Wednesday, a 500 Thursday and Friday, a 1000 on Saturday and a Grand Slam on Sunday. Challenges are numbered from 26 October 2026 (No. 1).
+- **The card and draw:** the server makes the day's challenge the first time anyone opens it: a card rolled like the daily roll (any season), drawn into a tier draw as in tournament mode (§5.1), both from the CSPRNG so nobody can see the next one coming. It's stored, so it stays the same all day even when the live season's data changes.
+- **Runs:** each player's first run of the day is the ranked one, saved set by set like a tournament. Guests can play (the browser signs in as one first); a guest's runs move to a new account with their rolls. After the run, replays of the same draw are just for fun and aren't saved. A run started before midnight can be finished the next day.
+- **Ranking:** most rounds won, then fewest sets lost. Ties share a rank, and whoever finished first is listed first. Accounts only, like the other boards.
+- **A check on set timing:** sets are reported by the browser, so a set recorded less than half a second after the run started or the last set is refused (no real set is that quick). It stops scripted runs, not a determined cheater.
+- **Sharing:** Wordle-style text (a line of 🟩/🟥 sets per round and how far the run went) with a link to `/challenge/[day]`, whose preview shows the card and tier. Earlier challenges stay viewable there, with the viewer's own run.
+- **Home and profile:** the home page shows today's challenge (start, carry on, or how it went), and the profile has the viewer's history and challenge streak.
+
 ---
 
 ## 6. Architecture
@@ -400,6 +417,7 @@ Schema: `supabase/migrations/`. Types: `src/lib/supabase/database.types.ts`
 - `delete_stale_guests(days = 30)`: deletes anonymous users older than 30 days with no roll in the last 30 days (their rolls go too). A `pg_cron` job runs it nightly at 04:23 UTC.
 - `tournaments(roll_id, tier, entrants jsonb, you, seed, sets boolean[], rounds_won, created_at, finished_at)`: one per roll (§5.1), readable by the roll's owner. `tier` is null for runs from before tiers; only Grand Slams have 32 entrants. `tournament_add_set(roll, expected, won, rounds_won)` appends a set only if the tournament still has `expected` sets and isn't over. Service role only.
 - `seasons(id, roll_id, year, player_id, player_name, setup jsonb, sets boolean[], status, wins, losses, titles, points, calendar_slam, created_at, updated_at, finished_at)`: season mode (§5.2), owned through the card's roll and readable by its owner. `season_start(roll, setup)` starts one unless the owner already has one in progress (locked per owner); `season_add_set(...)` appends a set only if the season still has `expected` sets, and stores the summary the server worked out. Service role only. Playing a season counts as activity for guest cleanup.
+- `challenges(day, tier, card jsonb, score, entrants jsonb, you, seed, created_at)`: one per UTC day (§5.3), written and read by the server only. `challenge_runs(day, user_id, sets boolean[], sets_lost, rounds_won, created_at, updated_at, finished_at)`: one per player per day, readable by its player. `challenge_add_set(day, user, expected, won, rounds_won)` appends a set only if the run still has `expected` sets, isn't over, and half a second has passed since its last set ('added', 'stale' or 'too-fast'). Service role only. `challenge_leaderboard(day)`: a day's board, like the others. The guest claim and cleanup include challenge runs.
 - `photo_submissions(...)` and `admins(user_id)`: community photo suggestions. Signed-in players suggest a Wikimedia Commons file for a player-season (or all of a player's seasons); the server checks the file on Commons, and an admin approves or rejects it at `/admin/photos`. Approved photos take their place on the cards (`src/lib/season-photo.ts`).
 - `roll_leaderboard(from, to)`: rolls between two UTC days (at most a week), so it serves both the daily and the weekly board. `alltime_leaderboard()`: accounts by `total_score`. `season_leaderboard()`: each account's best finished season. All return the top 100 plus the viewer's own rows, with public columns only: handle, avatar, player, score (or record), rank, the board's size, and `is_viewer`.
 
@@ -448,6 +466,7 @@ Schema: `supabase/migrations/`. Types: `src/lib/supabase/database.types.ts`
 - Tournament tiers (250, 500, 1000, Grand Slam), compressed odds, a harder timing game with lines and the line review, and tap or hold controls
 - Season mode (§5.2): the full calendar against a rival field, the race and the ATP Finals, a seasons leaderboard and profile tab, practice seasons in the sandbox, and storylines
 - Collection goals with bronze, silver and gold medals in the player-dex
+- The daily challenge (§5.3): the same card and draw for everyone each day, a board per day, sharing and history
 
 ---
 

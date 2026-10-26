@@ -8,6 +8,7 @@ const TABS = [
   { href: "/leaderboard/weekly", label: "Weekly" },
   { href: "/leaderboard/all-time", label: "All time" },
   { href: "/leaderboard/seasons", label: "Seasons" },
+  { href: "/leaderboard/challenge", label: "Challenge" },
 ];
 
 export default function LeaderboardLayout({ children }: LayoutProps<"/leaderboard">) {

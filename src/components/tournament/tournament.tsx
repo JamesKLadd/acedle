@@ -124,13 +124,20 @@ export function Tournament({
   initialSets,
   save,
   readOnly = false,
+  onSets,
 }: {
   setup: TournamentSetup;
   initialSets: readonly boolean[];
   save?: (expected: number, won: boolean) => Promise<boolean[]>;
   readOnly?: boolean;
+  /** Called with the player's sets whenever they change. */
+  onSets?: (sets: boolean[]) => void;
 }) {
-  const [sets, setSets] = useState<boolean[]>([...initialSets]);
+  const [sets, setOwnSets] = useState<boolean[]>([...initialSets]);
+  const setSets = (next: boolean[]) => {
+    setOwnSets(next);
+    onSets?.(next);
+  };
   const [view, setView] = useState<"draw" | "match">("draw");
   const [decided, setDecided] = useState<Decided | null>(null);
   const [saving, setSaving] = useState<{ expected: number; won: boolean } | null>(null);

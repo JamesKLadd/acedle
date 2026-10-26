@@ -12,6 +12,7 @@ const TABS = [
   { href: "/profile/badges", label: "Badges" },
   { href: "/profile/dex", label: "Player-dex" },
   { href: "/profile/seasons", label: "Seasons" },
+  { href: "/profile/challenges", label: "Challenges" },
 ];
 
 export default function ProfileLayout({ children }: LayoutProps<"/profile">) {
