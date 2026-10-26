@@ -103,15 +103,17 @@ export function FitText({
   text: string;
   children?: ReactNode;
   className: string;
-  as?: "p" | "h1" | "h2";
+  /** "span" keeps it phrasing content, for use inside a button. */
+  as?: "p" | "h1" | "h2" | "span";
 }) {
   // A little slack for kerning and sub-pixel rounding.
   const fit = { "--fit": `calc(100cqi / ${(longestWordEm(text) * 1.04).toFixed(2)})` } as CSSProperties;
+  const Wrapper = Tag === "span" ? "span" : "div";
   return (
-    <div className="@container min-w-0">
+    <Wrapper className="@container block min-w-0">
       <Tag className={className} style={fit}>
         {children ?? text}
       </Tag>
-    </div>
+    </Wrapper>
   );
 }

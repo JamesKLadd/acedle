@@ -1,5 +1,6 @@
 import { Trophy } from "lucide-react";
 
+import { FitText } from "@/components/ui";
 import { CALENDAR } from "@/lib/season/calendar";
 import type { EventResult, EventStatus, SeasonState } from "@/lib/season/season";
 
@@ -48,7 +49,11 @@ export function SeasonCalendar({
                   </span>
                   {current && <span className="size-2 animate-pulse rounded-full bg-accent" aria-label="Now" />}
                 </span>
-                <span className="font-display text-xs leading-tight break-words uppercase sm:text-sm">{event.name}</span>
+                <FitText
+                  as="span"
+                  text={event.name}
+                  className="block font-display leading-tight uppercase [font-size:min(0.75rem,var(--fit))] sm:[font-size:min(0.875rem,var(--fit))]"
+                />
                 <span className="hidden text-[11px] text-subtle sm:block">{COURT_LABEL[event.court]}</span>
                 <span
                   className={`mt-auto flex items-center gap-1 pt-1 text-[10px] leading-tight font-semibold sm:text-xs ${
