@@ -78,5 +78,5 @@ export function drawSeason(card: PlayerSeason, score: number, rng: Rng = Math.ra
     return chosen.sort((a, b) => a - b);
   });
 
-  return { you: toRival(card, score), rivals, entries, seed: Math.floor(rng() * 2 ** 32) };
+  return { you: toRival(card, score), rivals, entries, seed: Math.floor(rng() * 2 ** 32), seeding: "points" };
 }

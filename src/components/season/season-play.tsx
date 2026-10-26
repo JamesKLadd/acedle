@@ -421,7 +421,17 @@ function EventDetail({ state, index }: { state: SeasonState; index: number }) {
   }
 
   const ko = state.knockouts[index];
-  // Upcoming draws are already made; their results stay hidden until they're played.
+  if (!ko.draw) {
+    return (
+      <>
+        {heading}
+        <p className="rounded-md border-2 border-dashed border-line px-4 py-6 text-center text-sm text-muted">
+          The draw is made once {CALENDAR[index - 1].name} is over, seeded by race points.
+        </p>
+      </>
+    );
+  }
+  // Upcoming draws already made (seasons seeded by card score) keep their results hidden until they're played.
   const shown = ko.state ?? tournamentState(ko.draw, [], eventRules(event));
   return (
     <>

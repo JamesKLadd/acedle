@@ -173,7 +173,8 @@ export function seedDraw(
 }
 
 /**
- * Places `pool` into a draw of `size`, numbered by score. The best `seeded`
+ * Places `pool` into a draw of `size`, numbered best first (by score unless
+ * `better` says otherwise). The best `seeded`
  * take their seeded places; the rest fill the other places in an order
  * shuffled by `random` (all seeded by default). `you` is an index in `pool`,
  * returned as one in the draw.
@@ -184,9 +185,11 @@ export function placeDraw(
   size: 16 | 32,
   seeded: number = size,
   random: () => number = Math.random,
+  /** Orders the pool best first (default: by score). */
+  better: (a: Omit<Entrant, "seed">, b: Omit<Entrant, "seed">) => number = (a, b) => b.score - a.score,
 ): { entrants: Entrant[]; you: number } {
   if (pool.length !== size) throw new Error(`A draw needs ${size} entrants`);
-  const bySeed = pool.map((e, i) => ({ e, i })).sort((a, b) => b.e.score - a.e.score);
+  const bySeed = pool.map((e, i) => ({ e, i })).sort((a, b) => better(a.e, b.e));
   const order = [...SEED_ORDER[size]];
   // The unseeded, shuffled into the unseeded places.
   const open = order.flatMap((s, place) => (s > seeded ? [place] : []));

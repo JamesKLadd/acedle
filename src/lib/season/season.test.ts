@@ -99,7 +99,7 @@ describe("seasonState", () => {
     const s = seasonState(setupFor(20_000), []);
     expect(s.current).toMatchObject({ event: 0, round: "Round of 32", bestOf: 5, won: 0, lost: 0 });
     expect(s.knockouts.map((k) => k.status)).toEqual(["current", ...Array(12).fill("upcoming")]);
-    expect(s.knockouts.map((k) => k.draw.entrants.length)).toEqual(KNOCKOUTS.map((e) => (e.kind === "slam" ? 32 : 16)));
+    expect(s.knockouts.map((k) => k.draw!.entrants.length)).toEqual(KNOCKOUTS.map((e) => (e.kind === "slam" ? 32 : 16)));
     expect(s.finals.status).toBe("upcoming");
     expect(s).toMatchObject({ record: { wins: 0, losses: 0 }, points: 0, perfect: true, done: false });
   });
@@ -178,7 +178,7 @@ describe("seasonState", () => {
   });
 
   it("seeds the top quarter of each draw and places the rest at random", () => {
-    const draws = (seed: number) => seasonState(setupFor(500, seed), []).knockouts.map((k) => k.draw);
+    const draws = (seed: number) => seasonState(setupFor(500, seed), []).knockouts.map((k) => k.draw!);
     const [ao] = draws(1);
     // Seeds 1–8 in their places: 1 at the top, 2 at the bottom, 3 and 4 in the other quarters.
     expect([0, 30, 16, 14].map((p) => ao.entrants[p].seed)).toEqual([1, 2, 3, 4]);
@@ -187,6 +187,41 @@ describe("seasonState", () => {
     const order = (d: typeof ao) => d.entrants.map((e) => e.seed).join();
     expect(order(draws(1)[0])).toBe(order(ao));
     expect(order(draws(2)[0])).not.toBe(order(ao));
+  });
+
+  it("seeds by race points once the season seeds that way, card score breaking ties", () => {
+    const setup: SeasonSetup = { ...setupFor(20_000), seeding: "points" };
+    const seedOf = (s: ReturnType<typeof seasonState>, i: number, playerId: number) =>
+      s.knockouts[i].draw!.entrants.find((e) => e.playerId === playerId)!.seed;
+
+    // Everyone on 0 points at the Australian Open: seeded by score, 40k–21k ahead of the player.
+    const start = seasonState(setup, []);
+    expect(seedOf(start, 0, 1)).toBe(21);
+    expect(start.knockouts.slice(1).every((k) => k.draw === null)).toBe(true);
+
+    // The player wins the Australian Open: top seed at Indian Wells, above rivals with twice the score.
+    const champ = seasonState(setup, T(15));
+    expect(champ.knockouts[1].draw).not.toBeNull();
+    expect(champ.knockouts.slice(2).every((k) => k.draw === null)).toBe(true);
+    expect(seedOf(champ, 1, 1)).toBe(1);
+    // The other seeds are the Masters field's best in the race, not by score.
+    const ao = champ.knockouts[0].state!;
+    const aoWins = new Map<number, number>();
+    for (const m of ao.rounds.flat()) if (m.winner !== null) aoWins.set(m.winner, (aoWins.get(m.winner) ?? 0) + 1);
+    const racePts = (playerId: number) => {
+      const idx = champ.knockouts[0].draw!.entrants.findIndex((e) => e.playerId === playerId);
+      return idx < 0 ? 0 : POINTS.slam[aoWins.get(idx) ?? 0];
+    };
+    const iw = champ.knockouts[1].draw!.entrants;
+    const bySeed = [...iw].sort((a, b) => a.seed - b.seed);
+    for (let k = 1; k < bySeed.length; k++) {
+      const [a, b] = [bySeed[k - 1], bySeed[k]];
+      expect(racePts(a.playerId) > racePts(b.playerId) || (racePts(a.playerId) === racePts(b.playerId) && a.score >= b.score)).toBe(true);
+    }
+
+    // Seasons from before keep their score seeding and their draws made in advance.
+    expect(seedOf(seasonState(setupFor(20_000), T(15)), 1, 1)).not.toBe(1);
+    expect(seasonState(setupFor(20_000), []).knockouts.every((k) => k.draw !== null)).toBe(true);
   });
 
   it("replays a season exactly", () => {

@@ -47,6 +47,12 @@ export interface SeasonSetup {
   entries: number[][];
   /** Unsigned 32-bit seed for every match the player isn't in. */
   seed: number;
+  /**
+   * "points": each event is seeded by race points so far (card score breaks
+   * ties, so the first event goes by score). Seasons started before that was
+   * added seed by card score throughout, so they replay as they were.
+   */
+  seeding?: "points";
 }
 
 export const RIVALS = 40;
@@ -57,13 +63,21 @@ const eventSeed = (seed: number, event: number) => Math.floor(matchRandom(seed, 
 /** Seeded players per event (the top quarter, as in a real draw); the rest are drawn at random. */
 const SEEDED = { slam: 8, masters: 4 } as const;
 
-/** The knockout draw for event `i` (an index in KNOCKOUTS). */
-export function eventDraw(setup: SeasonSetup, i: number): TournamentSetup {
+/**
+ * The knockout draw for event `i` (an index in KNOCKOUTS), seeded by race
+ * `points` (by player id) when the season seeds that way, else by card score.
+ */
+export function eventDraw(setup: SeasonSetup, i: number, points?: ReadonlyMap<number, number>): TournamentSetup {
   const kind = KNOCKOUTS[i].kind as "slam" | "masters";
   const seed = eventSeed(setup.seed, i);
   const pool: Rival[] = [setup.you, ...setup.entries[i].map((r) => setup.rivals[r])];
+  const pts = (e: Omit<Entrant, "seed">) => points?.get(e.playerId) ?? 0;
+  const better =
+    setup.seeding === "points"
+      ? (a: Omit<Entrant, "seed">, b: Omit<Entrant, "seed">) => pts(b) - pts(a) || b.score - a.score
+      : undefined;
   let k = 0;
-  const placed = placeDraw(pool, 0, FORMAT[kind].size, SEEDED[kind], () => matchRandom(seed, 9, k++, 64));
+  const placed = placeDraw(pool, 0, FORMAT[kind].size, SEEDED[kind], () => matchRandom(seed, 9, k++, 64), better);
   return { tier: null, ...placed, seed };
 }
 
@@ -96,7 +110,8 @@ export interface EventResult {
 export interface KnockoutView {
   event: SeasonEvent;
   status: EventStatus;
-  draw: TournamentSetup;
+  /** Null for an upcoming event seeded by race points: its draw is made when the event before is over. */
+  draw: TournamentSetup | null;
   /** Null until the event is played. */
   state: TournamentState | null;
   result: EventResult | null;
@@ -220,11 +235,12 @@ export function seasonState(setup: SeasonSetup, sets: readonly boolean[]): Seaso
 
   const knockouts: KnockoutView[] = [];
   for (const [i, event] of KNOCKOUTS.entries()) {
-    const draw = eventDraw(setup, i);
     if (current) {
+      const draw = setup.seeding === "points" ? null : eventDraw(setup, i);
       knockouts.push({ event, status: "upcoming", draw, state: null, result: null });
       continue;
     }
+    const draw = eventDraw(setup, i, pointsOf);
 
     if (i > 0) form = formAtNextEvent(form);
     const state = tournamentState(draw, sets.slice(cursor), eventRules(event));
