@@ -132,7 +132,20 @@ points, best roll and all-time rank, with three tabs:
 - **Badges:** all 55 badges by category, with times earned and the first day.
   Hidden badges show as "???" until earned.
 - **Player-dex:** players, player-seasons and years collected out of all that
-  can be rolled, a grid of the 37 years, and each player with the seasons rolled.
+  can be rolled, goals, a grid of the 37 years, and each player with the
+  seasons rolled.
+
+**Goals** (`src/lib/profile/goals.ts`) have bronze, silver and gold levels,
+set so that at one roll a day a typical player reaches them in about two
+weeks, three months and a year (simulated with uniform rolls). Collecting
+goals count different countries, years and players rolled, and different
+player-seasons that finished top 10 or No. 1, won a Slam, or were left-handed.
+Playing goals count tournament-mode titles, tiers won, titles without a set
+dropped, season-mode event titles and seasons finished. They're worked out
+from the viewer's rolls and seasons on each visit (nothing stored), so rolls
+from before goals count. The profile header shows the medals reached, and
+the home page lists any that today's card brought (with its tournament and
+seasons).
 
 Public profiles (clicking a name on a board) are a possible later addition.
 

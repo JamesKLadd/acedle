@@ -3,12 +3,14 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { BoardSkeleton } from "@/components/board";
+import { GoalBoard } from "@/components/goals";
 import { Progress } from "@/components/progress";
 import { SectionTitle } from "@/components/ui";
 import { loadSeasons } from "@/lib/data/seasons";
 import { flag } from "@/lib/flags";
 import { playerDex, poolTotals } from "@/lib/profile/collection";
-import { getMyRolls } from "@/lib/profile/queries";
+import { goalProgress } from "@/lib/profile/goals";
+import { getMyRolls, getMySeasons } from "@/lib/profile/queries";
 
 export default function DexPage() {
   return (
@@ -19,7 +21,8 @@ export default function DexPage() {
 }
 
 async function Dex() {
-  const dex = playerDex(await getMyRolls());
+  const [rolls, seasons] = await Promise.all([getMyRolls(), getMySeasons()]);
+  const dex = playerDex(rolls);
   const totals = poolTotals(loadSeasons());
   return (
     <>
@@ -29,7 +32,11 @@ async function Dex() {
         <Progress label="Years" value={dex.rollsPerYear.size} total={totals.years.length} />
       </div>
 
-      <SectionTitle className="mt-8 mb-3">Years</SectionTitle>
+      <div className="mt-8">
+        <GoalBoard progress={goalProgress(rolls, seasons)} />
+      </div>
+
+      <SectionTitle className="mt-4 mb-3">Years</SectionTitle>
       <ul className="grid grid-cols-5 gap-1.5 sm:grid-cols-8">
         {totals.years.map((y) => {
           const n = dex.rollsPerYear.get(y) ?? 0;

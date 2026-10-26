@@ -44,6 +44,10 @@
   --legendary: #c18a05;
   --mythic: #cf2e78;
 
+  /* Goal medals (gold is --gold). */
+  --bronze: #c27a3e;
+  --silver: #a9b0bc;
+
   color-scheme: light;
 }
 
@@ -79,6 +83,9 @@
   --legendary: #f5c542;
   --mythic: #ff6eb4;
 
+  --bronze: #d8925a;
+  --silver: #c3cad6;
+
   color-scheme: dark;
 }
 
@@ -112,6 +119,8 @@
   --color-epic: var(--epic);
   --color-legendary: var(--legendary);
   --color-mythic: var(--mythic);
+  --color-bronze: var(--bronze);
+  --color-silver: var(--silver);
 
   /* Kept for older class names. */
   --color-background: var(--bg);

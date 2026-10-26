@@ -1,4 +1,4 @@
-import { Award, BarChart3, Dices, Flame, Trophy } from "lucide-react";
+import { Award, BarChart3, Dices, Flame, Medal, Trophy } from "lucide-react";
 import Link from "next/link";
 
 import { Avatar } from "@/components/board";
@@ -7,18 +7,21 @@ import { getViewer } from "@/lib/auth/viewer";
 import { fmtDate, fmtScore } from "@/lib/format";
 import { getAllTimeBoard } from "@/lib/leaderboard";
 import { summarizeRolls } from "@/lib/profile/collection";
-import { getMyProfile, getMyRolls } from "@/lib/profile/queries";
+import { goalProgress, medalCount } from "@/lib/profile/goals";
+import { getMyProfile, getMyRolls, getMySeasons } from "@/lib/profile/queries";
 import { utcDay } from "@/lib/roll/daily";
 import { bestStreak, currentStreak } from "@/lib/streak";
 
 /** Avatar, name, streak and headline stats for the viewer (account or guest). */
 export async function ProfileHeader() {
   const viewer = await getViewer();
-  const [profile, rolls, board] = await Promise.all([
+  const [profile, rolls, board, seasons] = await Promise.all([
     getMyProfile(),
     getMyRolls(),
     viewer.isAccount ? getAllTimeBoard(viewer.supabase) : null,
+    getMySeasons(),
   ]);
+  const medals = medalCount(goalProgress(rolls, seasons));
   const { count, total, best } = summarizeRolls(rolls);
   const rank = board?.find((e) => e.is_viewer);
   const days = rolls.map((r) => r.day);
@@ -59,6 +62,14 @@ export async function ProfileHeader() {
                 <Flame className="size-3.5" aria-hidden />
                 {streak}-day streak · best {bestStreak(days)}
               </Chip>
+            )}
+            {medals > 0 && (
+              <Link href="/profile/dex#goals" className="rounded-[4px] transition hover:opacity-80">
+                <Chip className="bg-gold/20 text-fg">
+                  <Medal className="size-3.5" aria-hidden />
+                  {medals} {medals === 1 ? "medal" : "medals"}
+                </Chip>
+              </Link>
             )}
           </div>
         </div>

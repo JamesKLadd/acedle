@@ -2,6 +2,7 @@ import { Flame, Timer, Trophy } from "lucide-react";
 import Link from "next/link";
 
 import { NextRollCountdown, RememberRoll } from "@/components/countdown";
+import { NewMedals } from "@/components/goals";
 import { RollCard } from "@/components/roll-card";
 import { SeasonLink } from "@/components/season/season-link";
 import { ShareButton } from "@/components/share-button";
@@ -15,6 +16,8 @@ import type { SignInNotice } from "@/lib/auth/sign-in";
 import { getViewer } from "@/lib/auth/viewer";
 import { fmtShortDay } from "@/lib/format";
 import { getRollBoard } from "@/lib/leaderboard";
+import { medalsFromCard } from "@/lib/profile/goals";
+import { getMyRolls, getMySeasons } from "@/lib/profile/queries";
 import { getSeasonPhoto } from "@/lib/season-photo";
 import { toDailyRoll, utcDay } from "@/lib/roll/daily";
 import { supabaseRollStore } from "@/lib/roll/store";
@@ -88,7 +91,7 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
   const total = profile?.data?.total_score ?? recent.reduce((sum, r) => sum + r.score, 0);
   const rollCount = profile?.data?.roll_count ?? recent.length;
   const roll = row && toDailyRoll(row);
-  const tournament = roll ? await getTournament(roll.id) : null;
+  const [tournament, medals] = roll ? await Promise.all([getTournament(roll.id), newMedalsFrom(roll.id)]) : [null, []];
   const top = roll ? topPercent(roll.score.total) : 100;
   const mine = board?.find((e) => e.is_viewer);
   const notice =
@@ -130,6 +133,7 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
             )}
           </div>
           <div className="mt-4 flex flex-col gap-4">
+            <NewMedals medals={medals} />
             <TournamentLink rollId={roll.id} tournament={tournament} isOwner />
             <SeasonLink rollId={roll.id} ownerId={userId!} isOwner />
           </div>
@@ -169,6 +173,17 @@ export async function Today({ searchParams }: { searchParams: Promise<Record<str
       )}
     </div>
   );
+}
+
+/** Goal medals today's card brought. A bonus: if they can't be worked out, there are none to show. */
+async function newMedalsFrom(rollId: string) {
+  try {
+    const [rolls, seasons] = await Promise.all([getMyRolls(), getMySeasons()]);
+    return medalsFromCard(rollId, rolls, seasons);
+  } catch (e) {
+    console.error(e);
+    return [];
+  }
 }
 
 function StreakChip({ streak }: { streak: number }) {

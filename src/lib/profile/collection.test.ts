@@ -14,6 +14,9 @@ const roll = (over: Partial<RollSummary>): RollSummary => ({
   country: "SRB",
   finalRank: 1,
   score: 100,
+  hand: "R",
+  wonSlam: true,
+  tournament: null,
   ...over,
 });
 

@@ -16,8 +16,12 @@ export interface RollSummary {
   country: string;
   finalRank: number;
   score: number;
+  /** "R", "L", "U" or "A". */
+  hand: string;
+  /** The season includes a Grand Slam title. */
+  wonSlam: boolean;
   /** The roll's finished tournament, if any. */
-  tournament?: RunResult | null;
+  tournament: (RunResult & { setsLost: number }) | null;
 }
 
 export function summarizeRolls(rolls: readonly RollSummary[]) {
