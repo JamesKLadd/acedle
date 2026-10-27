@@ -565,7 +565,8 @@ function NextMatch({
         <span className="font-display text-sm text-subtle">VS</span>
         <Side rival={match.opponent} label="Opponent" court={event.court} odds={1 - match.odds.total} />
       </div>
-      <OddsLine match={match} />
+      {/* In a match it goes under the timing game: it changes from set to set, and mustn't move the game. */}
+      {!sets && <OddsLine match={match} />}
       {onPlay && (
         <button onClick={onPlay} className={`${buttonClass({ size: "lg" })} self-start`}>
           <Play className="size-5" aria-hidden />
@@ -662,6 +663,7 @@ function MatchView({
       <div ref={game} className="scroll-mt-20 scroll-mb-4">
         {!busy && <TimingGame key={sets.length} chance={match.odds.total} onResult={onSet} />}
       </div>
+      <OddsLine match={match} />
     </div>
   );
 }
