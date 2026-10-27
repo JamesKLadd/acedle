@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowLeft, CalendarRange, Crown, Flame, Play, RotateCcw, Snowflake, Trophy } from "lucide-react";
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 
 import { abandonSeason, playSeasonSet } from "@/app/seasons/actions";
 import { ShareButton } from "@/components/share-button";
@@ -108,8 +108,16 @@ export function SeasonPlay({
   const state = useMemo(() => seasonState(setup, sets), [setup, sets]);
   const stories = useMemo(() => seasonStories(state), [state]);
   const playable = !readOnly && status === "active";
-  const top = useRef<HTMLDivElement>(null);
+  const game = useRef<HTMLDivElement>(null);
   const store = useMemo(() => saver(season.id, practice), [season.id, practice]);
+
+  // Starting a match: bring the timing game into view if it is off screen, and leave the page be otherwise.
+  const inMatch = view === "match" && decided === null;
+  useEffect(() => {
+    if (!inMatch || !game.current) return;
+    const { top, bottom } = game.current.getBoundingClientRect();
+    if (top < 64 || bottom > window.innerHeight) game.current.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [inMatch]);
 
   function persist(expected: number, won: boolean) {
     setSaving({ expected, won });
@@ -170,7 +178,6 @@ export function SeasonPlay({
   function play() {
     setDecided(null);
     setView("match");
-    top.current?.scrollIntoView({ block: "start", behavior: "smooth" });
   }
 
   function overview() {
@@ -188,7 +195,7 @@ export function SeasonPlay({
   );
 
   return (
-    <div ref={top} className="flex scroll-mt-20 flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <SeasonHeader season={season} state={state} status={status} card={card} practice={practice} />
       {decided ? (
         <MatchOver decided={decided} onNext={play} onOverview={overview} busy={saving !== null} error={errorBanner} />
@@ -198,6 +205,7 @@ export function SeasonPlay({
           match={state.current}
           sets={sets}
           onSet={onSet}
+          game={game}
           onOverview={overview}
           busy={saving !== null && error !== null}
           error={errorBanner}
@@ -628,6 +636,7 @@ function MatchView({
   match,
   sets,
   onSet,
+  game,
   onOverview,
   busy,
   error,
@@ -636,6 +645,8 @@ function MatchView({
   match: CurrentMatch;
   sets: boolean[];
   onSet: (won: boolean) => void;
+  /** Where the timing game sits, for scrolling it into view. */
+  game: RefObject<HTMLDivElement | null>;
   onOverview: () => void;
   busy: boolean;
   error: ReactNode;
@@ -648,7 +659,9 @@ function MatchView({
       </button>
       <NextMatch state={state} match={match} sets={inMatch} />
       {error}
-      {!busy && <TimingGame key={sets.length} chance={match.odds.total} onResult={onSet} />}
+      <div ref={game} className="scroll-mt-20 scroll-mb-4">
+        {!busy && <TimingGame key={sets.length} chance={match.odds.total} onResult={onSet} />}
+      </div>
     </div>
   );
 }
