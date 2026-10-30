@@ -661,7 +661,7 @@ function MatchView({
       <NextMatch state={state} match={match} sets={inMatch} />
       {error}
       <div ref={game} className="scroll-mt-20 scroll-mb-4">
-        {!busy && <TimingGame key={sets.length} chance={match.odds.total} onResult={onSet} />}
+        {!busy && <TimingGame key={sets.length} chance={match.odds.total} bestOf={match.bestOf} onResult={onSet} />}
       </div>
       <OddsLine match={match} />
     </div>

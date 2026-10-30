@@ -25,11 +25,20 @@ const bounce = (x: number) => {
  * stops it in the green (its white lines count as in). With the "tap"
  * controls the ball starts by itself and a tap (or Space) stops it; with
  * "hold" the player holds to start it and releases to stop it. `chance`
- * (the player's odds) sets the green zone's size and the ball's speed. Stops
+ * (the player's odds for the match) sets the green zone's size and the ball's speed. Stops
  * right by a line go to the line review.
  */
-export function TimingGame({ chance, onResult }: { chance: number; onResult: (won: boolean) => void }) {
-  const { zone, passMs } = gameParams(chance);
+export function TimingGame({
+  chance,
+  bestOf,
+  onResult,
+}: {
+  chance: number;
+  /** The match's length: the zone is set so the match, not just the set, plays at `chance`. */
+  bestOf: number;
+  onResult: (won: boolean) => void;
+}) {
+  const { zone, passMs } = gameParams(chance, bestOf);
   // Placed after mount, so server and client render the same.
   const [center, setCenter] = useState<number | null>(null);
   const [phase, setPhase] = useState<"ready" | "live" | "review" | "in" | "out">("ready");

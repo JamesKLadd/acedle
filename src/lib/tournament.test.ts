@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   gameParams,
+  hitChance,
+  LINES_ZONE,
+  matchChance,
+  setChance,
   lineCall,
   matchRandom,
   roundName,
@@ -70,18 +74,32 @@ describe("winChance", () => {
 describe("gameParams", () => {
   it("gives favourites a wider zone and a slower ball", () => {
     const fav = gameParams(0.9);
-    const dog = gameParams(0.1);
+    const dog = gameParams(0.3);
     expect(fav.zone).toBeGreaterThan(dog.zone);
     expect(fav.passMs).toBeGreaterThan(dog.passMs);
     expect(gameParams(2)).toEqual(gameParams(1));
   });
 
-  it("leaves long shots little more than the lines and a fast ball", () => {
-    expect(gameParams(0).zone).toBeLessThan(0.025);
-    expect(gameParams(0).passMs).toBeLessThan(400);
-    // A 10% underdog gets well under a tenth of the track.
-    expect(gameParams(0.1).zone).toBeLessThan(0.04);
-    expect(gameParams(1).zone).toBeCloseTo(0.4);
+  it("leaves 5% shots and longer just the lines", () => {
+    for (const p of [0, 0.02, 0.05]) expect(gameParams(p).zone).toBe(LINES_ZONE);
+    expect(gameParams(0.05, 5).zone).toBeLessThan(0.03);
+    expect(gameParams(0.3).zone).toBeLessThan(0.05);
+  });
+
+  it("lets a practised player win matches at about the odds shown", () => {
+    for (const bestOf of [3, 5]) {
+      for (const p of [0.1, 0.2, 0.3, 0.5, 0.7, 0.9, 0.97]) {
+        const { zone, passMs } = gameParams(p, bestOf);
+        expect(matchChance(hitChance(zone * passMs), bestOf)).toBeCloseTo(p, 2);
+      }
+    }
+  });
+
+  it("works out match chances from set chances", () => {
+    expect(matchChance(0.5, 3)).toBeCloseTo(0.5);
+    expect(matchChance(0.6, 3)).toBeCloseTo(0.648);
+    expect(matchChance(0.6, 5)).toBeCloseTo(0.68256);
+    expect(setChance(matchChance(0.37, 5), 5)).toBeCloseTo(0.37, 6);
   });
 });
 

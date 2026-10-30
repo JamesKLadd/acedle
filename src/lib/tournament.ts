@@ -117,15 +117,77 @@ export function legacyChance(a: number, b: number): number {
 export const oddsFor = (setup: Pick<TournamentSetup, "legacyOdds">) => (setup.legacyOdds ? legacyChance : winChance);
 
 /**
- * The timing game for a set at `chance` (the player's odds): the green zone's
- * share of the track (its lines included) and how long the ball takes to
- * cross it. Big favourites get a wide zone and a slow ball; big underdogs
- * little more than the two lines and a fast ball. The zone grows slowly at
- * first, so long odds stay long.
+ * How a practised player's taps land in the timing game, measured from played
+ * seasons: their timing is off by about TAP_SPREAD_MS (one standard
+ * deviation, normal), and TAP_SLIP of sets are lost to a slip whatever the
+ * zone. The game is tuned so such a player wins matches at the odds shown.
  */
-export function gameParams(chance: number) {
+export const TAP_SPREAD_MS = 22;
+export const TAP_SLIP = 0.04;
+
+/** The narrowest zone: its two white lines and a sliver of green between them. */
+export const LINES_ZONE = 0.022;
+const MAX_ZONE = 0.3;
+
+/** Chance of winning a best-of-`bestOf` match when each set is won with chance `q`. */
+export function matchChance(q: number, bestOf: number): number {
+  const need = Math.ceil(bestOf / 2);
+  // Win `need` sets before losing `need`: the last set is a win, after k losses.
+  let total = 0;
+  let ways = 1;
+  for (let k = 0; k < need; k++) {
+    if (k > 0) ways = (ways * (need - 1 + k)) / k;
+    total += ways * q ** need * (1 - q) ** k;
+  }
+  return total;
+}
+
+/** The set-winning chance that wins a best-of-`bestOf` match with chance `p`. */
+export function setChance(p: number, bestOf: number): number {
+  let lo = 0;
+  let hi = 1;
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    if (matchChance(mid, bestOf) < p) lo = mid;
+    else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+/** Error function (Abramowitz and Stegun 7.1.26, to about 1e-7). */
+function erf(x: number): number {
+  const t = 1 / (1 + 0.3275911 * Math.abs(x));
+  const y = 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+  return x < 0 ? -y : y;
+}
+
+/** Chance that a practised player stops the ball inside a window of `windowMs` (centred on their aim). */
+export function hitChance(windowMs: number): number {
+  return (1 - TAP_SLIP) * erf(windowMs / (2 * Math.SQRT2 * TAP_SPREAD_MS));
+}
+
+/**
+ * The timing game for a set at `chance` (the player's odds for a
+ * best-of-`bestOf` match): the green zone's share of the track (its lines
+ * included) and how long the ball takes to cross it. The time the ball spends
+ * in the zone is set so a practised player wins the match at about `chance`;
+ * the ball is quicker and the zone narrower for underdogs, down to just the
+ * lines at long odds (about 10% and under).
+ */
+export function gameParams(chance: number, bestOf = 3) {
   const p = Math.min(1, Math.max(0, chance));
-  return { zone: 0.022 + 0.378 * p ** 1.5, passMs: Math.round(380 + 1220 * p) };
+  const passMs = Math.round(400 + 400 * p);
+  // The time in the zone a practised player hits often enough, by bisection on hitChance.
+  const target = setChance(p, bestOf);
+  let lo = 0;
+  let hi = 400;
+  for (let i = 0; i < 30; i++) {
+    const mid = (lo + hi) / 2;
+    if (hitChance(mid) < target) lo = mid;
+    else hi = mid;
+  }
+  const zone = Math.min(MAX_ZONE, Math.max(LINES_ZONE, hi / passMs));
+  return { zone, passMs };
 }
 
 /** How near the line (as a share of the track) a tap has to be for a line review. */

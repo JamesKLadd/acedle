@@ -256,7 +256,7 @@ export function Tournament({
           · Set {m.won + m.lost + 1}
         </p>
         {errorBanner}
-        {busy && error ? null : <TimingGame key={sets.length} chance={odds} onResult={onSet} />}
+        {busy && error ? null : <TimingGame key={sets.length} chance={odds} bestOf={m.bestOf} onResult={onSet} />}
         <p className="text-center text-xs text-subtle">
           Your odds come from the two scores ({pct(odds)}): better odds mean a wider green zone and a slower ball.
         </p>
